@@ -11,7 +11,7 @@ connectDB();
 app.use(express.json({ extended: false }));
 
 // User Cors
-app.use(cors);
+app.use(cors());
 
 app.get('/', (req, res) => res.json({ msg: 'hello world' }));
 

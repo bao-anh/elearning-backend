@@ -1,0 +1,4 @@
+{
+  "mongoURI": "mongodb+srv://baobi:baobi123@elearning-xl7pu.mongodb.net/elearning?retryWrites=true&w=majority",
+  "jwtSecret": "secret"
+}

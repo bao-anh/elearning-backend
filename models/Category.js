@@ -1,24 +1,17 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-const UserSchema = Schema({
+const Category = Schema({
   name: {
     type: String,
     required: true,
   },
-  email: {
-    type: String,
-    required: true,
-  },
-  password: {
-    type: String,
-    required: true,
-  },
-  roll: {
-    type: Number,
-    required: true,
-    default: 0,
-  },
+  childrenIds: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'category',
+    },
+  ],
   courseIds: [
     {
       type: Schema.Types.ObjectId,
@@ -31,4 +24,4 @@ const UserSchema = Schema({
   },
 });
 
-module.exports = mongoose.model('user', UserSchema);
+module.exports = mongoose.model('category', Category);

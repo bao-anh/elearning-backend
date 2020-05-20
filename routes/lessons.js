@@ -4,24 +4,24 @@ const mongoose = require('mongoose');
 const { check, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
 
+const Lesson = require('../models/Lesson');
 const Topic = require('../models/Topic');
-const Course = require('../models/Course');
 
-// @route   GET api/topics
-// @desc    Get all topics
+// @route   GET api/lessons
+// @desc    Get all lessons
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const topics = await Topic.find();
-    res.json(topics);
+    const lessons = await Lesson.find();
+    res.json(lessons);
   } catch (err) {
     console.error(err);
     res.status(500).send('Sever Error');
   }
 });
 
-// @route   POST api/topics
-// @desc    Create a new topics
+// @route   POST api/lessons
+// @desc    Create a new lessons
 // @access  Private
 router.post(
   '/',
@@ -29,6 +29,9 @@ router.post(
   [
     check('name', 'Name is required').not().isEmpty(),
     check('courseId', 'Course is required').exists(),
+    check('orderIndex', 'Order index is required').exists(),
+    check('topicId', 'Topic is required').exists(),
+    check('videoLink', 'Link video is required').exists(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -42,40 +45,46 @@ router.post(
     const {
       name,
       courseId,
-      lessonIds,
+      topicId,
+      documentIds,
       assignmentIds,
+      videoLink,
+      orderIndex,
       isFree,
       commentId,
       progressIds,
     } = req.body;
     try {
-      const newtopic = new Topic({
+      const newLesson = new Lesson({
         name,
         courseId,
+        topicId,
         isFree,
+        orderIndex,
+        videoLink,
         commentId: commentId || null,
-        lessonIds: lessonIds || [],
         assignmentIds: assignmentIds || [],
+        documentIds: documentIds || [],
         progressIds: progressIds || [],
       });
 
-      await newtopic.save({ session });
+      await newLesson.save({ session });
 
       try {
-        const course = await Course.findById(courseId);
-        course.topicIds = [...course.topicIds, newtopic._id];
-        await course.save({ session });
+        const topic = await Topic.findById(topicId);
+        topic.lessonIds = [...topic.lessonIds, newLesson._id];
+        await topic.save({ session });
       } catch (err) {
         await session.abortTransaction();
         session.endSession();
         console.error(err);
-        res.status(400).json({ msg: 'Course is not exist' });
+        res.status(400).json({ msg: 'Topic is not exist' });
       }
 
       await session.commitTransaction();
       session.endSession();
 
-      res.json(newtopic);
+      res.json(newLesson);
     } catch (err) {
       console.error(err);
       res.status(500).send('Sever Error');
@@ -83,31 +92,37 @@ router.post(
   }
 );
 
-// @route   PUT api/topics
+// @route   PUT api/lessons
 // @desc    Update a topic by id
 // @access  Private
 router.put('/:id', auth, async (req, res) => {
   const {
     name,
     courseId,
-    lessonIds,
+    topicId,
+    documentIds,
+    orderIndex,
     assignmentIds,
+    videoLink,
     isFree,
     commentId,
     progressIds,
   } = req.body;
 
   try {
-    let topic = await Topic.findById(req.params.id);
-    topic.name = name ? name : topic.name;
-    topic.courseId = courseId ? courseId : topic.courseId;
-    topic.lessonIds = lessonIds ? lessonIds : topic.lessonIds;
-    topic.assignmentIds = assignmentIds ? assignmentIds : topic.assignmentIds;
-    topic.isFree = isFree ? isFree : topic.isFree;
-    topic.commentId = commentId ? commentId : topic.commentId;
-    topic.progressIds = progressIds ? progressIds : topic.progressIds;
-    await topic.save();
-    res.json(topic);
+    let lesson = await Lesson.findById(req.params.id);
+    lesson.name = name ? name : lesson.name;
+    lesson.courseId = courseId ? courseId : lesson.courseId;
+    lesson.topicId = topicId ? topicId : lesson.topicId;
+    lesson.documentIds = documentIds ? documentIds : lesson.documentIds;
+    lesson.assignmentIds = assignmentIds ? assignmentIds : lesson.assignmentIds;
+    lesson.orderIndex = orderIndex ? orderIndex : lesson.orderIndex;
+    lesson.videoLink = videoLink ? videoLink : lesson.videoLink;
+    lesson.isFree = isFree ? isFree : lesson.isFree;
+    lesson.commentId = commentId ? commentId : lesson.commentId;
+    lesson.progressIds = progressIds ? progressIds : lesson.progressIds;
+    await lesson.save();
+    res.json(lesson);
   } catch (err) {
     console.error(err);
     res.status(500).send('Sever Error');

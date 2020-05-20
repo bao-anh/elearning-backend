@@ -10,13 +10,13 @@ const AssignmentSchema = Schema({
     type: Schema.Types.ObjectId,
     ref: 'course',
   },
-  largeTopicId: {
+  topicId: {
     type: Schema.Types.ObjectId,
-    ref: 'largeTopic',
+    ref: 'topic',
   },
-  smallTopicId: {
+  lessonId: {
     type: Schema.Types.ObjectId,
-    ref: 'smallTopic',
+    ref: 'lesson',
   },
   questionIds: [
     {
@@ -30,14 +30,25 @@ const AssignmentSchema = Schema({
       ref: 'user',
     },
   ],
-  time: {
+  isFree: {
+    type: Boolean,
+    default: false,
+  },
+  timeToShowUp: {
+    type: Number,
+    default: 0,
+  },
+  duration: {
     type: Number,
     required: true,
     default: 60,
   },
+  orderIndex: {
+    type: Number,
+    default: -1,
+  },
   passPercent: {
     type: Number,
-    required: true,
     default: 100,
   },
   commentId: {

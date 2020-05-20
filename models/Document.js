@@ -10,6 +10,15 @@ const DocumentSchema = Schema({
     type: String,
     required: true,
   },
+  courseId: {
+    type: Schema.Types.ObjectId,
+    ref: 'course',
+    required: true,
+  },
+  lessonId: {
+    type: Schema.Types.ObjectId,
+    ref: 'lesson',
+  },
   date: {
     type: Date,
     default: Date.now,

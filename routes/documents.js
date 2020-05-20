@@ -4,31 +4,33 @@ const mongoose = require('mongoose');
 const { check, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
 
-const Topic = require('../models/Topic');
+const Document = require('../models/Document');
+const Lesson = require('../models/Lesson');
 const Course = require('../models/Course');
 
-// @route   GET api/topics
-// @desc    Get all topics
+// @route   GET api/documents
+// @desc    Get all documents
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const topics = await Topic.find();
-    res.json(topics);
+    const documents = await Document.find();
+    res.json(documents);
   } catch (err) {
     console.error(err);
     res.status(500).send('Sever Error');
   }
 });
 
-// @route   POST api/topics
-// @desc    Create a new topics
+// @route   POST api/documents
+// @desc    Create a new documents
 // @access  Private
 router.post(
   '/',
   auth,
   [
     check('name', 'Name is required').not().isEmpty(),
-    check('courseId', 'Course is required').exists(),
+    check('link', 'Link is required').exists(),
+    check('courseId', 'Course id required').exists(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -39,31 +41,21 @@ router.post(
     const session = await mongoose.startSession();
     session.startTransaction();
 
-    const {
-      name,
-      courseId,
-      lessonIds,
-      assignmentIds,
-      isFree,
-      commentId,
-      progressIds,
-    } = req.body;
+    const { name, link, courseId, lessonId } = req.body;
     try {
-      const newtopic = new Topic({
+      const newDocument = new Document({
         name,
-        courseId,
-        isFree,
-        commentId: commentId || null,
-        lessonIds: lessonIds || [],
-        assignmentIds: assignmentIds || [],
-        progressIds: progressIds || [],
+        link,
+        courseId: courseId || null,
+        lessonId: lessonId || null,
       });
 
-      await newtopic.save({ session });
+      await newDocument.save({ session });
 
+      // If document is belong to course
       try {
         const course = await Course.findById(courseId);
-        course.topicIds = [...course.topicIds, newtopic._id];
+        course.documentIds = [...course.documentIds, newDocument._id];
         await course.save({ session });
       } catch (err) {
         await session.abortTransaction();
@@ -71,19 +63,32 @@ router.post(
         console.error(err);
         res.status(400).json({ msg: 'Course is not exist' });
       }
+      // If document is belong to lesson
+      if (lessonId) {
+        try {
+          const lesson = await Lesson.findById(lessonId);
+          lesson.documentIds = [...lesson.documentIds, newDocument._id];
+          await lesson.save({ session });
+        } catch (err) {
+          await session.abortTransaction();
+          session.endSession();
+          console.error(err);
+          res.status(400).json({ msg: 'Lesson is not exist' });
+        }
+      }
 
       await session.commitTransaction();
       session.endSession();
 
-      res.json(newtopic);
+      res.json(newDocument);
     } catch (err) {
       console.error(err);
-      res.status(500).send('Sever Error');
+      res.status(500).json('Sever Error');
     }
   }
 );
 
-// @route   PUT api/topics
+// @route   PUT api/documents
 // @desc    Update a topic by id
 // @access  Private
 router.put('/:id', auth, async (req, res) => {
@@ -98,7 +103,7 @@ router.put('/:id', auth, async (req, res) => {
   } = req.body;
 
   try {
-    let topic = await Topic.findById(req.params.id);
+    let topic = await Document.findById(req.params.id);
     topic.name = name ? name : topic.name;
     topic.courseId = courseId ? courseId : topic.courseId;
     topic.lessonIds = lessonIds ? lessonIds : topic.lessonIds;

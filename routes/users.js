@@ -36,6 +36,8 @@ router.post(
         name,
         email,
         password,
+        roll: 0,
+        courseIds: [],
       });
 
       const salt = await bcrypt.genSalt(10);

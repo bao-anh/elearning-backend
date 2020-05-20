@@ -10,13 +10,9 @@ const LessonSchema = Schema({
     type: Schema.Types.ObjectId,
     ref: 'course',
   },
-  largeTopcId: {
+  topicId: {
     type: Schema.Types.ObjectId,
-    ref: 'largeTopic',
-  },
-  smallTopicId: {
-    type: Schema.Types.ObjectId,
-    ref: 'smallTopic',
+    ref: 'topic',
   },
   assignmentIds: [
     {
@@ -30,9 +26,17 @@ const LessonSchema = Schema({
       ref: 'document',
     },
   ],
+  isFree: {
+    type: Boolean,
+    default: false,
+  },
   videoLink: {
     type: String,
     required: true,
+  },
+  orderIndex: {
+    type: Number,
+    default: -1,
   },
   commentId: {
     type: Schema.Types.ObjectId,

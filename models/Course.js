@@ -6,6 +6,10 @@ const CourseSchema = Schema({
     type: String,
     required: true,
   },
+  categoryId: {
+    type: Schema.Types.ObjectId,
+    ref: 'category',
+  },
   currentPrice: {
     type: Number,
     required: true,
@@ -32,10 +36,10 @@ const CourseSchema = Schema({
       ref: 'user',
     },
   ],
-  largeTopicIds: [
+  topicIds: [
     {
       type: Schema.Types.ObjectId,
-      ref: 'largeTopic',
+      ref: 'topic',
     },
   ],
   documentIds: [

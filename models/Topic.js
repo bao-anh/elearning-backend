@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-const SmallTopicSchema = Schema({
+const TopicSchema = Schema({
   name: {
     type: String,
     required: true,
@@ -9,14 +9,6 @@ const SmallTopicSchema = Schema({
   courseId: {
     type: Schema.Types.ObjectId,
     ref: 'course',
-  },
-  largeTopicId: {
-    type: Schema.Types.ObjectId,
-    ref: 'largeTopic',
-  },
-  isFree: {
-    type: Boolean,
-    default: false,
   },
   lessonIds: [
     {
@@ -30,6 +22,10 @@ const SmallTopicSchema = Schema({
       ref: 'assignment',
     },
   ],
+  isFree: {
+    type: Boolean,
+    default: false,
+  },
   commentId: {
     type: Schema.Types.ObjectId,
     ref: 'comment',
@@ -46,4 +42,4 @@ const SmallTopicSchema = Schema({
   },
 });
 
-module.exports = mongoose.model('smallTopic', SmallTopicSchema);
+module.exports = mongoose.model('topic', TopicSchema);

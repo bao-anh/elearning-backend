@@ -7,12 +7,25 @@ const auth = require('../middleware/auth');
 const Course = require('../models/Course');
 const Category = require('../models/Category');
 
-// @route   GET api/large-topics
+// @route   GET api/courses
 // @desc    Get all course
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
     const course = await Course.find();
+    res.json(course);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Sever Error');
+  }
+});
+
+// @route   GET api/courses
+// @desc    Get all course with category
+// @access  Private
+router.get('/get-all-with-category', auth, async (req, res) => {
+  try {
+    const course = await Course.find().populate({ path: 'categoryIds' });
     res.json(course);
   } catch (err) {
     console.error(err);

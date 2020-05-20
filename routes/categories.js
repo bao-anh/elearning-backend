@@ -19,6 +19,18 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// @route   GET api/categories/courses
+// @desc    Get all categories with courses
+// @access  Private
+router.get('/get-all-with-course', auth, async (req, res) => {
+  try {
+    const category = await Category.find().populate({ path: 'courseIds' });
+    res.json(category);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Sever Error');
+  }
+});
 // @route   POST api/categories
 // @desc    Create a new categories
 // @access  Private

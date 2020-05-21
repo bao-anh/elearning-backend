@@ -20,6 +20,21 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// @route   GET api/courses/:id/topics
+// @desc    Get course with its topics
+// @access  Private
+router.get('/:id/topics', auth, async (req, res) => {
+  try {
+    const topic = await Course.findById(req.params.id).populate({
+      path: 'topicIds',
+    });
+    res.json(topic);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Sever Error');
+  }
+});
+
 // @route   GET api/courses
 // @desc    Get all course with category
 // @access  Private

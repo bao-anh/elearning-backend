@@ -20,6 +20,23 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// @route   GET api/lessons/:id
+// @desc    Get lesson with all assigment
+// @access  Private
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const lesson = await Lesson.findById(req.params.id)
+      .populate({
+        path: 'assignmentIds',
+      })
+      .populate({ path: 'documentIds' });
+    res.json(lesson);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Sever Error');
+  }
+});
+
 // @route   POST api/lessons
 // @desc    Create a new lessons
 // @access  Private

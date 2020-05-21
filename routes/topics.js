@@ -20,6 +20,21 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// @route   GET api/topics/:id
+// @desc    Get topic by id
+// @access  Private
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const topics = await Topic.findById(req.params.id)
+      .populate({ path: 'lessonIds' })
+      .populate({ path: 'assignmentIds' });
+    res.json(topics);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Sever Error');
+  }
+});
+
 // @route   POST api/topics
 // @desc    Create a new topics
 // @access  Private

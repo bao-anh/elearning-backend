@@ -1,5 +1,4 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
@@ -19,18 +18,34 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// @route   GET api/categories/courses
+// @route   GET api/categories/get-all-with-course
 // @desc    Get all categories with courses
 // @access  Private
 router.get('/get-all-with-course', auth, async (req, res) => {
   try {
-    const category = await Category.find().populate({ path: 'courseIds' });
+    const category = await Category.find().populate({ path: 'childrenIds' });
     res.json(category);
   } catch (err) {
     console.error(err);
     res.status(500).send('Sever Error');
   }
 });
+
+// @route   GET api/categories/:id/courses
+// @desc    Get courses by categoryId
+// @access  Private
+router.get('/:id/courses', auth, async (req, res) => {
+  try {
+    const course = await Category.findById(req.params.id).populate({
+      path: 'courseIds',
+    });
+    res.json(course);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Sever Error');
+  }
+});
+
 // @route   POST api/categories
 // @desc    Create a new categories
 // @access  Private

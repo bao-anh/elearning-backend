@@ -17,7 +17,7 @@ const LessonSchema = Schema({
   assignmentIds: [
     {
       type: Schema.Types.ObjectId,
-      ref: 'assigment',
+      ref: 'assignment',
     },
   ],
   documentIds: [

@@ -53,6 +53,7 @@ router.get('/get-all-with-category', auth, async (req, res) => {
 // @access  Private
 router.post(
   '/',
+  auth,
   [
     check('name', 'Name is required').not().isEmpty(),
     check('categoryId', 'CategoryId is required').exists(),

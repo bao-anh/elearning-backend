@@ -21,6 +21,36 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// @route   GET api/assigments/:id
+// @desc    Get assignment by id
+// @access  Private
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const assigment = await Assignment.findById(req.params.id).populate({
+      path: 'questionIds',
+    });
+    res.json(assigment);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Sever Error');
+  }
+});
+
+// @route   GET api/assigments/:id/questions
+// @desc    Get assigment with its questions
+// @access  Private
+router.get('/:id/questions', auth, async (req, res) => {
+  try {
+    const assigments = await Assignment.findById(req.params.id).populate({
+      path: 'questionIds',
+    });
+    res.json(assigments);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Sever Error');
+  }
+});
+
 // @route   POST api/assigments
 // @desc    Create a new assigments
 // @access  Private

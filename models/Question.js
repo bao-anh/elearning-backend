@@ -6,11 +6,18 @@ const QuestionSchema = Schema({
     type: String,
     required: true,
   },
-  picture: {
+  part: {
+    type: Number,
+    default: 0,
+  },
+  soundLink: {
+    type: String,
+  },
+  imageLink: {
     type: String,
   },
   correctAnswer: {
-    type: String,
+    type: Number,
     required: true,
   },
   date: {

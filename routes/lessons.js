@@ -28,6 +28,7 @@ router.get('/:id', auth, async (req, res) => {
     const lesson = await Lesson.findById(req.params.id)
       .populate({
         path: 'assignmentIds',
+        populate: { path: 'questionIds' },
       })
       .populate({ path: 'documentIds' });
     res.json(lesson);

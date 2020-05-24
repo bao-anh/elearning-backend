@@ -21,14 +21,22 @@ router.get('/', auth, async (req, res) => {
 });
 
 // @route   GET api/lessons/:id
-// @desc    Get lesson with all assigment
+// @desc    Get lesson with all assigment and user's progress
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
   try {
     const lesson = await Lesson.findById(req.params.id)
       .populate({
+        path: ' progressIds',
+        match: { userId: req.user._id },
+      })
+      .populate({
         path: 'assignmentIds',
         populate: { path: 'questionIds' },
+      })
+      .populate({
+        path: 'assignmentIds',
+        populate: { path: 'progressIds', match: { userId: req.user._id } },
       })
       .populate({ path: 'documentIds' });
     res.json(lesson);

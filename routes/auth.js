@@ -25,7 +25,9 @@ router.post(
 
     const { email, password } = req.body;
     try {
-      let user = await User.findOne({ email });
+      let user = await User.findOne({ email })
+        .populate({ path: 'courseIds' })
+        .populate({ path: 'courseIds', populate: { path: 'progressIds' } });
 
       if (!user) {
         return res.status(400).json({ msg: 'User is not exist' });
@@ -49,7 +51,7 @@ router.post(
         },
         (err, token) => {
           if (err) throw err;
-          res.json({ token });
+          res.json({ token, user });
         }
       );
     } catch (err) {
@@ -64,7 +66,10 @@ router.post(
 // @access  Public
 router.get('/', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await User.findById(req.user._id)
+      .populate({ path: 'courseIds' })
+      .populate({ path: 'courseIds', populate: { path: 'progressIds' } })
+      .select('-password');
     res.json(user);
   } catch (err) {
     console.error(err);

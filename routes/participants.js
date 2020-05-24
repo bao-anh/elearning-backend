@@ -4,56 +4,33 @@ const mongoose = require('mongoose');
 const { check, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
 
-const Topic = require('../models/Topic');
-const Course = require('../models/Course');
+const Participant = require('../models/Participant');
+const Assignment = require('../models/Assignment');
+const User = require('../models/User');
 
-// @route   GET api/topics
-// @desc    Get all topics
+// @route   GET api/participants
+// @desc    Get all participants
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const topics = await Topic.find();
-    res.json(topics);
+    const participants = await Participant.find();
+    res.json(participants);
   } catch (err) {
     console.error(err);
     res.status(500).send('Sever Error');
   }
 });
 
-// @route   GET api/topics/:id/user/:userId
-// @desc    Get topic by id with progress of user
-// @access  Private
-router.get('/:id', auth, async (req, res) => {
-  try {
-    const topics = await Topic.findById(req.params.id)
-      .populate({
-        path: 'progressIds',
-        match: { userId: req.user._id },
-      })
-      .populate({
-        path: 'lessonIds',
-        populate: { path: 'progressIds', match: { userId: req.user._id } },
-      })
-      .populate({
-        path: 'assignmentIds',
-        populate: { path: 'progressIds', match: { userId: req.user._id } },
-      });
-    res.json(topics);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Sever Error');
-  }
-});
-
-// @route   POST api/topics
-// @desc    Create a new topics
+// @route   POST api/participants
+// @desc    Create a new participant
 // @access  Private
 router.post(
   '/',
   auth,
   [
-    check('name', 'Name is required').not().isEmpty(),
-    check('courseId', 'Course is required').exists(),
+    check('userId', 'User id is required').exists(),
+    check('userAnswer', 'User answer is required').exists(),
+    check('score', 'Score id required').exists(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -64,51 +41,57 @@ router.post(
     const session = await mongoose.startSession();
     session.startTransaction();
 
-    const {
-      name,
-      courseId,
-      lessonIds,
-      assignmentIds,
-      isFree,
-      commentId,
-      progressIds,
-    } = req.body;
+    const { userId, assignmentId, testId, userAnswer, score } = req.body;
     try {
-      const newtopic = new Topic({
-        name,
-        courseId,
-        isFree,
-        commentId: commentId || null,
-        lessonIds: lessonIds || [],
-        assignmentIds: assignmentIds || [],
-        progressIds: progressIds || [],
+      const newParticipant = new Participant({
+        userId,
+        assignmentId: assignmentId || null,
+        testId: testId || null,
+        userAnswer,
+        score,
       });
 
-      await newtopic.save({ session });
+      await newParticipant.save({ session });
 
       try {
-        const course = await Course.findById(courseId);
-        course.topicIds = [...course.topicIds, newtopic._id];
-        await course.save({ session });
+        const user = await User.findById(userId);
+        user.participantIds = [...user.participantIds, newParticipant._id];
+        await user.save({ session });
       } catch (err) {
         await session.abortTransaction();
         session.endSession();
         console.error(err);
-        res.status(400).json({ msg: 'Course is not exist' });
+        res.status(400).json({ msg: 'User is not exist' });
+      }
+      // If document is belong to lesson
+      if (assignmentId) {
+        try {
+          const assignment = await Assignment.findById(assignmentId);
+          assignment.participantIds = [
+            ...assignment.participantIds,
+            newParticipant._id,
+          ];
+          await assignment.save({ session });
+        } catch (err) {
+          await session.abortTransaction();
+          session.endSession();
+          console.error(err);
+          res.status(400).json({ msg: 'Assignment is not exist' });
+        }
       }
 
       await session.commitTransaction();
       session.endSession();
 
-      res.json(newtopic);
+      res.json(newParticipant);
     } catch (err) {
       console.error(err);
-      res.status(500).send('Sever Error');
+      res.status(500).json('Sever Error');
     }
   }
 );
 
-// @route   PUT api/topics
+// @route   PUT api/participants
 // @desc    Update a topic by id
 // @access  Private
 router.put('/:id', auth, async (req, res) => {
@@ -123,7 +106,7 @@ router.put('/:id', auth, async (req, res) => {
   } = req.body;
 
   try {
-    let topic = await Topic.findById(req.params.id);
+    let topic = await Participant.findById(req.params.id);
     topic.name = name ? name : topic.name;
     topic.courseId = courseId ? courseId : topic.courseId;
     topic.lessonIds = lessonIds ? lessonIds : topic.lessonIds;

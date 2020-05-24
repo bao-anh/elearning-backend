@@ -27,7 +27,7 @@ const AssignmentSchema = Schema({
   participantIds: [
     {
       type: Schema.Types.ObjectId,
-      ref: 'user',
+      ref: 'participant',
     },
   ],
   isFree: {

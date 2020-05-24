@@ -31,13 +31,14 @@ router.get('/get-all-with-course', auth, async (req, res) => {
   }
 });
 
-// @route   GET api/categories/:id/courses
-// @desc    Get courses by categoryId
+// @route   GET api/categories/:id/courses/user/:userId
+// @desc    Get courses by categoryId with user's progress
 // @access  Private
 router.get('/:id/courses', auth, async (req, res) => {
   try {
     const course = await Category.findById(req.params.id).populate({
       path: 'courseIds',
+      populate: { path: 'progressIds', match: { userId: req.user._id } },
     });
     res.json(course);
   } catch (err) {

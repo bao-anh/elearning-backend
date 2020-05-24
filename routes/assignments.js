@@ -26,25 +26,20 @@ router.get('/', auth, async (req, res) => {
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
   try {
-    const assigment = await Assignment.findById(req.params.id).populate({
-      path: 'questionIds',
-    });
-    res.json(assigment);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Sever Error');
-  }
-});
+    const assigment = await Assignment.findById(req.params.id)
+      .populate({
+        path: 'questionIds',
+      })
+      .populate({
+        path: 'participantIds',
+        populate: { path: 'userId' },
+      })
+      .populate({ path: 'progressIds', match: { userId: req.user._id } });
 
-// @route   GET api/assigments/:id/questions
-// @desc    Get assigment with its questions
-// @access  Private
-router.get('/:id/questions', auth, async (req, res) => {
-  try {
-    const assigments = await Assignment.findById(req.params.id).populate({
-      path: 'questionIds',
-    });
-    res.json(assigments);
+    let newAssignment = assigment;
+    newAssignment.participantIds = assigment.participantIds.reverse();
+
+    res.json(newAssignment);
   } catch (err) {
     console.error(err);
     res.status(500).send('Sever Error');

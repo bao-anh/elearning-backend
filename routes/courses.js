@@ -7,12 +7,15 @@ const auth = require('../middleware/auth');
 const Course = require('../models/Course');
 const Category = require('../models/Category');
 
-// @route   GET api/courses
-// @desc    Get all course
+// @route   GET api/courses/:userId
+// @desc    Get all course with user's progress
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const course = await Course.find();
+    const course = await Course.find().populate({
+      path: 'progressIds',
+      match: { userId: req.user._id },
+    });
     res.json(course);
   } catch (err) {
     console.error(err);
@@ -21,13 +24,19 @@ router.get('/', auth, async (req, res) => {
 });
 
 // @route   GET api/courses/:id/topics
-// @desc    Get course with its topics
+// @desc    Get course with its topics and user's progress
 // @access  Private
 router.get('/:id/topics', auth, async (req, res) => {
   try {
-    const topic = await Course.findById(req.params.id).populate({
-      path: 'topicIds',
-    });
+    const topic = await Course.findById(req.params.id)
+      .populate({
+        path: 'progressIds',
+        match: { userId: req.user._id },
+      })
+      .populate({
+        path: 'topicIds',
+        populate: { path: 'progressIds', match: { userId: req.user._id } },
+      });
     res.json(topic);
   } catch (err) {
     console.error(err);
@@ -35,12 +44,17 @@ router.get('/:id/topics', auth, async (req, res) => {
   }
 });
 
-// @route   GET api/courses
-// @desc    Get all course with category
+// @route   GET api/courses/:userId
+// @desc    Get all course with category and user's progress
 // @access  Private
 router.get('/get-all-with-category', auth, async (req, res) => {
   try {
-    const course = await Course.find().populate({ path: 'categoryIds' });
+    const course = await Course.find()
+      .populate({ path: 'categoryIds' })
+      .populate({
+        path: 'progressIds',
+        match: { userId: req.user._id },
+      });
     res.json(course);
   } catch (err) {
     console.error(err);

@@ -9,13 +9,18 @@ const config = require('config');
 const User = require('../models/User');
 
 // @route   GET api/users/:id/courses
-// @desc    Get all user's courses
+// @desc    Get all user's courses and user's progress
 // @access  Private
 router.get('/:id/courses', auth, async (req, res) => {
   try {
-    const courses = await User.findById(req.params.id).populate({
-      path: 'courseIds',
-    });
+    const courses = await User.findById(req.params.id)
+      .populate({
+        path: 'courseIds',
+      })
+      .populate({
+        path: 'courseIds',
+        populate: { path: 'progressIds', match: { userId: req.params.id } },
+      });
     res.json(courses);
   } catch (err) {
     console.error(err);
@@ -74,7 +79,7 @@ router.post(
         },
         (err, token) => {
           if (err) throw err;
-          res.json({ token });
+          res.json({ token, user });
         }
       );
     } catch (err) {

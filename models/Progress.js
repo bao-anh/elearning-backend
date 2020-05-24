@@ -2,13 +2,9 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const ProgressSchema = Schema({
-  parentId: {
-    type: Schema.Types.ObjectId,
-    required: true,
-  },
   userId: {
     type: Schema.Types.ObjectId,
-    required: true,
+    ref: 'user',
   },
   percentComplete: {
     type: Number,

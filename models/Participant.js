@@ -10,13 +10,11 @@ const ParticipantSchema = Schema({
     type: Schema.Types.ObjectId,
     ref: 'assignment',
   },
-  questionIds: [
-    {
-      type: Schema.Types.ObjectId,
-      ref: 'question',
-    },
-  ],
-  userAnswers: [
+  testId: {
+    type: Schema.Types.ObjectId,
+    ref: 'test',
+  },
+  userAnswer: [
     {
       type: String,
     },

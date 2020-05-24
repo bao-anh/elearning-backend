@@ -25,6 +25,12 @@ const UserSchema = Schema({
       ref: 'course',
     },
   ],
+  participantIds: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'participant',
+    },
+  ],
   date: {
     type: Date,
     default: Date.now,

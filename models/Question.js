@@ -4,7 +4,6 @@ const Schema = mongoose.Schema;
 const QuestionSchema = Schema({
   content: {
     type: String,
-    required: true,
   },
   part: {
     type: Number,
@@ -16,9 +15,22 @@ const QuestionSchema = Schema({
   imageLink: {
     type: String,
   },
+  script: {
+    type: String,
+  },
+  childrenIds: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'question',
+    },
+  ],
+  answerArray: [
+    {
+      type: String,
+    },
+  ],
   correctAnswer: {
     type: Number,
-    required: true,
   },
   date: {
     type: Date,

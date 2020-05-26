@@ -5,41 +5,54 @@ const auth = require('../middleware/auth');
 
 const Question = require('../models/Question');
 
+// @route   GET api/questions
+// @desc    Query question
+// @access  Public
+router.get('/', auth, async (req, res) => {
+  try {
+    const question = await Question.find({ part: 6 }).select('_id');
+
+    res.json(question);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
+});
+
 // @route   POST api/questions
 // @desc    Create a question
 // @access  Private
-router.post(
-  '/',
-  auth,
-  [
-    check('content', 'Content is required').not().isEmpty(),
-    check('correctAnswer', 'Correct answer is required').not().isEmpty(),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+router.post('/', auth, async (req, res) => {
+  const {
+    content,
+    part,
+    soundLink,
+    imageLink,
+    script,
+    childrenIds,
+    correctAnswer,
+    answerArray,
+  } = req.body;
 
-    const { content, part, soundLink, imageLink, correctAnswer } = req.body;
+  try {
+    const newQuestion = new Question({
+      content,
+      part,
+      soundLink,
+      imageLink,
+      script,
+      childrenIds,
+      correctAnswer,
+      answerArray,
+    });
 
-    try {
-      const newQuestion = new Question({
-        content,
-        part,
-        soundLink: soundLink || '',
-        imageLink: imageLink || '',
-        correctAnswer,
-      });
+    await newQuestion.save();
 
-      await newQuestion.save();
-
-      res.json(newQuestion);
-    } catch (err) {
-      console.error(err);
-      res.status(500).send('Sever Error');
-    }
+    res.json(newQuestion);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Sever Error');
   }
-);
+});
 
 module.exports = router;

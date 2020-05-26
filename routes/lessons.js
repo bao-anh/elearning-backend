@@ -32,7 +32,7 @@ router.get('/:id', auth, async (req, res) => {
       })
       .populate({
         path: 'assignmentIds',
-        populate: { path: 'questionIds' },
+        populate: { path: 'questionIds', populate: { path: 'childrenIds' } },
       })
       .populate({
         path: 'assignmentIds',

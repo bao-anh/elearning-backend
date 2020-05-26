@@ -89,4 +89,20 @@ router.post(
   }
 );
 
+// @route   GET api/users/courses
+// @desc    Update courseIds in user
+// @access  Private
+router.put('/courses', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    user.courseIds.push(req.body.courseId);
+    await user.save();
+
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Sever Error');
+  }
+});
+
 module.exports = router;

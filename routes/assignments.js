@@ -7,6 +7,7 @@ const auth = require('../middleware/auth');
 const Assignment = require('../models/Assignment');
 const Topic = require('../models/Topic');
 const Lesson = require('../models/Lesson');
+const Question = require('../models/Question');
 
 // @route   GET api/assigments
 // @desc    Get all assigments
@@ -29,6 +30,7 @@ router.get('/:id', auth, async (req, res) => {
     const assigment = await Assignment.findById(req.params.id)
       .populate({
         path: 'questionIds',
+        populate: { path: 'childrenIds' },
       })
       .populate({
         path: 'participantIds',
@@ -182,6 +184,46 @@ router.put('/:id', auth, async (req, res) => {
     assigment.isFree = isFree ? isFree : assigment.isFree;
     assigment.commentId = commentId ? commentId : assigment.commentId;
     assigment.progressIds = progressIds ? progressIds : assigment.progressIds;
+    await assigment.save();
+    res.json(assigment);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Sever Error');
+  }
+});
+
+// @route   PUT api/assigments/:id/random
+// @desc    Random pick a question to assignment
+// @access  Private
+router.put('/:id/random', auth, async (req, res) => {
+  const { questionIds } = req.body;
+
+  try {
+    let assigment = await Assignment.findById(req.params.id);
+
+    let questions = await Question.find({ part: 7.2 }).select('_id');
+    let questionArr = questions;
+    let newQuestionIds = [];
+    const min = 3;
+    const max = 4;
+    const randomNumberOfElement = Math.floor(
+      Math.random() * (max - min + 1) + min
+    );
+
+    for (i = 0; i < randomNumberOfElement; i++) {
+      const newItemElement = Math.floor(Math.random() * questionArr.length);
+      newQuestionIds.push(questionArr[newItemElement]._id);
+      questionArr.splice(newItemElement, 1);
+    }
+
+    const shuffle = (array) => {
+      array.sort(() => Math.random() - 0.5);
+    };
+
+    shuffle(newQuestionIds);
+
+    assigment.questionIds = newQuestionIds;
+
     await assigment.save();
     res.json(assigment);
   } catch (err) {

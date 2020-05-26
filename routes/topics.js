@@ -20,7 +20,7 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// @route   GET api/topics/:id/user/:userId
+// @route   GET api/topics/:id
 // @desc    Get topic by id with progress of user
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
@@ -37,7 +37,8 @@ router.get('/:id', auth, async (req, res) => {
       .populate({
         path: 'assignmentIds',
         populate: { path: 'progressIds', match: { userId: req.user._id } },
-      });
+      })
+      .populate({ path: 'assignmentIds', populate: { path: 'questionIds' } });
     res.json(topics);
   } catch (err) {
     console.error(err);

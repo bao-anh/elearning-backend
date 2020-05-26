@@ -7,7 +7,7 @@ const auth = require('../middleware/auth');
 const Course = require('../models/Course');
 const Category = require('../models/Category');
 
-// @route   GET api/courses/:userId
+// @route   GET api/courses
 // @desc    Get all course with user's progress
 // @access  Private
 router.get('/', auth, async (req, res) => {
@@ -17,6 +17,33 @@ router.get('/', auth, async (req, res) => {
       match: { userId: req.user._id },
     });
     res.json(course);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Sever Error');
+  }
+});
+
+// @route   GET api/courses/:id
+// @desc    Get course with its member and document
+// @access  Private
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const topic = await Course.findById(req.params.id)
+      .populate({
+        path: 'memberIds',
+      })
+      .populate({
+        path: 'documentIds',
+      })
+      .populate({
+        path: 'progressIds',
+        populate: { path: 'userId' },
+      })
+      .populate({
+        path: 'topicIds',
+        populate: { path: 'progressIds', match: { userId: req.user._id } },
+      });
+    res.json(topic);
   } catch (err) {
     console.error(err);
     res.status(500).send('Sever Error');
@@ -181,5 +208,24 @@ router.put('/:id', auth, async (req, res) => {
     res.status(500).send('Sever Error');
   }
 });
+
+// @route   GET api/courses/:id/user
+// @desc    Update member in memberIds
+// @access  Private
+router.put('/:id/user', auth, async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    course.memberIds.push(req.user._id);
+    await course.save();
+
+    res.json(course);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Sever Error');
+  }
+});
+
+module.exports = router;
 
 module.exports = router;

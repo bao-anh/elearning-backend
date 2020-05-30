@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const bodyParser = require('body-parser');
 const connectDB = require('./config/db');
 
 const app = express();
@@ -9,7 +10,8 @@ connectDB();
 
 // Initial Middleware
 app.use(express.json({ extended: false }));
-
+app.use(bodyParser.json({ limit: '50mb', extended: true }));
+app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 // User Cors
 app.use(cors());
 
@@ -27,6 +29,9 @@ app.use('/api/documents', require('./routes/documents'));
 app.use('/api/questions', require('./routes/questions'));
 app.use('/api/participants', require('./routes/participants'));
 app.use('/api/progresses', require('./routes/progresses'));
+app.use('/api/scales', require('./routes/scales'));
+app.use('/api/toeic', require('./routes/toeic'));
+app.use('/api/tests', require('./routes/tests'));
 
 const PORT = process.env.PORT || 5000;
 

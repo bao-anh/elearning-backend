@@ -4,15 +4,21 @@ const { check, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
 
 const Question = require('../models/Question');
+const Part = require('../models/Part');
 
 // @route   GET api/questions
 // @desc    Query question
 // @access  Public
 router.get('/', auth, async (req, res) => {
   try {
-    const question = await Question.find({ part: 6 }).select('_id');
-
-    res.json(question);
+    const partIds = await Part.find({})
+      .populate({ path: 'progressIds', match: { userId: req.user._id } })
+      .populate({
+        path: 'participantIds',
+        match: { userId: req.user._id },
+        populate: { path: 'testId' },
+      });
+    res.json(partIds);
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');

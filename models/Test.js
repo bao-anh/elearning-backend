@@ -6,20 +6,20 @@ const TestSchema = Schema({
     type: String,
     required: true,
   },
-  part: {
-    type: String,
-    default: 'all',
-  },
   questionIds: [
     {
       type: Schema.Types.ObjectId,
       ref: 'question',
     },
   ],
+  duration: {
+    type: Number,
+    default: 600,
+  },
   date: {
     type: Date,
     default: Date.now,
   },
 });
 
-module.exports = mongoose.model('dummy', TestSchema);
+module.exports = mongoose.model('test', TestSchema);

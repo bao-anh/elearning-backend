@@ -31,6 +31,10 @@ const UserSchema = Schema({
       ref: 'participant',
     },
   ],
+  toeicId: {
+    type: Schema.Types.ObjectId,
+    ref: 'toeic',
+  },
   date: {
     type: Date,
     default: Date.now,

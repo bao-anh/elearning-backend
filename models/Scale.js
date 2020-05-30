@@ -2,14 +2,16 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const ScaleSchema = Schema({
-  name: {
-    type: String,
-    required: true,
-  },
-  content: {
-    type: Object,
-    required: true,
-  },
+  listening: [
+    {
+      type: Number,
+    },
+  ],
+  reading: [
+    {
+      type: Number,
+    },
+  ],
   date: {
     type: Date,
     default: Date.now,

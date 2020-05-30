@@ -59,6 +59,7 @@ router.post(
         password,
         roll: 0,
         courseIds: [],
+        toeicId: null,
       });
 
       const salt = await bcrypt.genSalt(10);
@@ -67,7 +68,7 @@ router.post(
 
       const payload = {
         user: {
-          id: user.id,
+          _id: user._id,
         },
       };
 
@@ -75,7 +76,7 @@ router.post(
         payload,
         config.get('jwtSecret'),
         {
-          expiresIn: 36000,
+          expiresIn: 360000,
         },
         (err, token) => {
           if (err) throw err;

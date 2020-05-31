@@ -5,20 +5,27 @@ const auth = require('../middleware/auth');
 
 const Question = require('../models/Question');
 const Part = require('../models/Part');
+const Toeic = require('../models/Toeic');
+const Participant = require('../models/Participant');
 
 // @route   GET api/questions
 // @desc    Query question
 // @access  Public
-router.get('/', auth, async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
   try {
-    const partIds = await Part.find({})
-      .populate({ path: 'progressIds', match: { userId: req.user._id } })
-      .populate({
-        path: 'participantIds',
-        match: { userId: req.user._id },
-        populate: { path: 'testId' },
-      });
-    res.json(partIds);
+    const toeic = await Toeic.find({}).populate({
+      path: 'participantIds',
+      select: '-userAnswer',
+      populate: {
+        path: 'testId userId',
+        select: 'name',
+        populate: {
+          path: 'questionIds',
+          select: 'childrenIds',
+        },
+      },
+    });
+    res.json(toeic);
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');

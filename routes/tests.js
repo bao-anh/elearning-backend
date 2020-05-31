@@ -13,6 +13,40 @@ const Scale = require('../models/Scale');
 const Toeic = require('../models/Toeic');
 const User = require('../models/User');
 
+// @route   GET api/tests/leaderboard
+// @desc    Get a leaderboard by part number
+// @access  Private
+router.get('/leaderboard/:id', auth, async (req, res) => {
+  try {
+    const leaderboard = await Part.findOne({
+      partNumber: req.params.id,
+    }).populate({
+      path: 'progressIds',
+      populate: { path: 'userId', select: 'name' },
+    });
+    res.json(leaderboard.progressIds);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
+});
+
+// @route   GET api/tests/:id
+// @desc    Get result of test by id
+// @access  Private
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const test = await Participant.findById(req.params.id).populate({
+      path: 'testId',
+      populate: { path: 'questionIds', populate: { path: 'childrenIds' } },
+    });
+    res.json({ participantIds: [test] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
+});
+
 // @route   POST api/tests
 // @desc    Create a toeic test
 // @access  Private
@@ -146,22 +180,119 @@ router.post(
           }
         }
 
-        const toeic = await Toeic.findOne({
-          userId: req.user._id,
-        }).populate({
+        // const toeic = await Toeic.find({}).populate({
+        //   path: 'participantIds',
+        //   populate: {
+        //     path: 'testId userId',
+        //     populate: {
+        //       path: 'questionIds',
+        //       populate: { path: 'childrenIds' },
+        //     },
+        //   },
+        // });
+
+        const toeic = await Toeic.find({}).populate({
           path: 'participantIds',
+          select: '-userAnswer',
           populate: {
             path: 'testId userId',
+            select: 'name',
             populate: {
               path: 'questionIds',
-              populate: { path: 'childrenIds' },
+              select: 'childrenIds',
             },
           },
         });
 
+        let participantIds = [];
+
+        toeic.map((children) => {
+          children.participantIds.map((participant) => {
+            if (participant.testId.questionIds.length < 50)
+              participantIds.push(participant);
+          });
+        });
+
         res.json({
           randomQuestionIds,
-          participantIds: toeic.participantIds.reverse(),
+          participantIds: participantIds.reverse(),
+        });
+      } else if (testType === 'full-test') {
+        const params = [
+          {
+            part: 1,
+            numberOfQuestion: 10,
+          },
+          {
+            part: 2,
+            numberOfQuestion: 15,
+          },
+          {
+            part: 3,
+            numberOfQuestion: 4,
+          },
+          {
+            part: 4,
+            numberOfQuestion: 4,
+          },
+          {
+            part: 5,
+            numberOfQuestion: 20,
+          },
+          {
+            part: 6,
+            numberOfQuestion: 4,
+          },
+          {
+            part: 7.1,
+            numberOfQuestion: 3,
+          },
+          {
+            part: 7.2,
+            numberOfQuestion: 2,
+          },
+        ];
+
+        let randomQuestionIds = [];
+
+        for (i = 0; i < 8; i++) {
+          const question = await Question.find({
+            part: params[i].part,
+          }).populate({
+            path: 'childrenIds',
+          });
+          for (j = 0; j < params[i].numberOfQuestion; j++) {
+            const randomIndex = Math.floor(Math.random() * question.length);
+            randomQuestionIds.push(question[randomIndex]);
+            question.splice(randomIndex, 1);
+          }
+        }
+
+        const toeic = await Toeic.find({}).populate({
+          path: 'participantIds',
+          select: '-userAnswer',
+          populate: {
+            path: 'testId userId',
+            select: 'name',
+            populate: {
+              path: 'questionIds',
+              select: 'childrenIds',
+            },
+          },
+        });
+
+        let participantIds = [];
+
+        toeic.map((children) => {
+          children.participantIds.map((participant) => {
+            if (participant.testId.questionIds.length > 50)
+              participantIds.push(participant);
+          });
+        });
+
+        res.json({
+          randomQuestionIds,
+          participantIds: participantIds.reverse(),
         });
       } else {
         console.log(testType);
@@ -303,7 +434,7 @@ router.post(
           console.error(err);
           res.status(400).json({ msg: 'Something when wrong in small part' });
         }
-      } else if (testType === 'short-test') {
+      } else if (testType === 'short-test' || testType === 'full-test') {
         const participant = new Participant({
           userId: req.user._id,
           testId: test._id,

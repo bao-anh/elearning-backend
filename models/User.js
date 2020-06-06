@@ -31,6 +31,12 @@ const UserSchema = Schema({
       ref: 'participant',
     },
   ],
+  setIds: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'set',
+    },
+  ],
   toeicId: {
     type: Schema.Types.ObjectId,
     ref: 'toeic',

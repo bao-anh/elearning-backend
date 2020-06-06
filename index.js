@@ -32,6 +32,8 @@ app.use('/api/progresses', require('./routes/progresses'));
 app.use('/api/scales', require('./routes/scales'));
 app.use('/api/toeic', require('./routes/toeic'));
 app.use('/api/tests', require('./routes/tests'));
+app.use('/api/sets', require('./routes/sets'));
+app.use('/api/terms', require('./routes/terms'));
 
 const PORT = process.env.PORT || 5000;
 

@@ -30,6 +30,10 @@ router.post(
         .populate({
           path: 'participantIds',
           select: 'score testId assignmentId date',
+        })
+        .populate({
+          path: 'setIds',
+          populate: { path: 'termIds', populate: { path: 'rememberIds' } },
         });
       if (!user) {
         return res.status(400).json({ msg: 'User is not exist' });
@@ -73,6 +77,10 @@ router.get('/', auth, async (req, res) => {
       .populate({
         path: 'participantIds',
         select: 'score testId assignmentId date',
+      })
+      .populate({
+        path: 'setIds',
+        populate: { path: 'termIds', populate: { path: 'rememberIds' } },
       })
       .select('-password');
     res.json(user);

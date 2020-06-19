@@ -15,12 +15,20 @@ const Remember = require('../models/Remember');
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const set = await Set.find({ ownerId: req.user._id }).populate({
-      path: 'ownerId',
-      select: 'name',
-    });
+    const userSet = await User.findById(req.user._id)
+      .populate({
+        path: 'setIds',
+        populate: [
+          {
+            path: 'termIds',
+            populate: { path: 'rememberIds', match: { userId: req.user._id } },
+          },
+          { path: 'ownerId ', select: 'name' },
+        ],
+      })
+      .select('setIds');
 
-    res.json(set);
+    res.json(userSet.setIds);
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');
@@ -37,7 +45,10 @@ router.get('/:id', auth, async (req, res) => {
         path: 'ownerId',
         select: 'name',
       })
-      .populate({ path: 'termIds', populate: { path: 'rememberIds' } });
+      .populate({
+        path: 'termIds',
+        populate: { path: 'rememberIds', match: { userId: req.user._id } },
+      });
 
     res.json(set);
   } catch (err) {
@@ -84,6 +95,49 @@ router.post('/', auth, parser.single('imageURL'), async (req, res) => {
     session.endSession();
 
     res.json('Add new set successful');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
+});
+
+// @route   POST api/sets/:id
+// @desc    Add set by link
+// @access  Private
+router.post('/:id', auth, parser.single('imageURL'), async (req, res) => {
+  try {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      const user = await User.findById(req.user._id);
+      user.setIds.push(req.params.id);
+      await user.save({ session });
+
+      const set = await Set.findById(req.params.id);
+
+      for (i = 0; i < set.termIds.length; i++) {
+        const term = await Term.findById(set.termIds[i]._id);
+        console.log(term);
+        const remember = new Remember({
+          userId: req.user._id,
+          correct: 0,
+          attempt: 0,
+        });
+        await remember.save({ session });
+        term.rememberIds.push(remember._id);
+        await term.save({ session });
+      }
+    } catch (err) {
+      await session.abortTransaction();
+      session.endSession();
+      console.error(err);
+      res.status(400).json({ msg: 'Something when wrong' });
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.json('Set added successfully');
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');
@@ -214,6 +268,56 @@ router.delete('/:id/terms/:termId', auth, async (req, res) => {
     session.endSession();
 
     res.json('Delete term successfully');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
+});
+
+// @route   PUT api/sets/:id/with-image
+// @desc    Update a set with image change
+// @access  Private
+router.put(
+  '/:id/with-image',
+  auth,
+  parser.single('imageURL'),
+  async (req, res) => {
+    try {
+      const { name, description, visiable, editable } = req.body;
+
+      const set = await Set.findById(req.params.id);
+      set.name = name;
+      set.description = description;
+      set.visiable = visiable;
+      set.editable = editable;
+      set.imageURL = req.file ? req.file.path : null;
+
+      await set.save();
+
+      res.json('Update set successfully');
+    } catch (err) {
+      console.error(err);
+      res.status(500).send('Server error');
+    }
+  }
+);
+
+// @route   PUT api/sets/:id/without-image
+// @desc    Update a set without image change
+// @access  Private
+router.put('/:id/without-image', auth, async (req, res) => {
+  try {
+    const { name, description, visiable, editable } = req.body;
+
+    const set = await Set.findById(req.params.id);
+    set.name = name;
+    set.description = description;
+    set.visiable = visiable;
+    set.editable = editable;
+
+    await set.save();
+
+    res.json('Update set successfully');
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');

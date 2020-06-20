@@ -2,19 +2,20 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const { check, validationResult } = require('express-validator');
+const { getAllParticipant } = require('../services/participant');
+const { getUserById } = require('../services/user');
+const { getAssignmentById } = require('../services/assignment');
 const { handleUnprocessableEntity } = require('../util');
 const auth = require('../middleware/auth');
 
 const Participant = require('../models/Participant');
-const Assignment = require('../models/Assignment');
-const User = require('../models/User');
 
 // @route   GET api/participants
 // @desc    Get all participants
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const participants = await Participant.find();
+    const participants = await getAllParticipant();
     handleUnprocessableEntity(participants, res);
     res.json(participants);
   } catch (err) {
@@ -56,7 +57,7 @@ router.post(
       await newParticipant.save({ session });
 
       try {
-        const user = await User.findById(userId);
+        const user = await getUserById(userId);
         user.participantIds = [...user.participantIds, newParticipant._id];
         await user.save({ session });
       } catch (err) {
@@ -68,7 +69,7 @@ router.post(
       // If document is belong to lesson
       if (assignmentId) {
         try {
-          const assignment = await Assignment.findById(assignmentId);
+          const assignment = await getAssignmentById(assignmentId);
           assignment.participantIds = [
             ...assignment.participantIds,
             newParticipant._id,
@@ -108,7 +109,7 @@ router.put('/:id', auth, async (req, res) => {
   } = req.body;
 
   try {
-    let topic = await Participant.findById(req.params.id);
+    let topic = await getParticipantById(req.params.id);
     topic.name = name ? name : topic.name;
     topic.courseId = courseId ? courseId : topic.courseId;
     topic.lessonIds = lessonIds ? lessonIds : topic.lessonIds;

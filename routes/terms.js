@@ -1,10 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
+const { getRememberById } = require('../services/remember');
 const auth = require('../middleware/auth');
-
-const Set = require('../models/Set');
-const Remember = require('../models/Remember');
 
 // @route   PUI api/terms
 // @desc    Update terms by userId
@@ -27,16 +25,14 @@ router.put(
       const { correct, incorrect } = req.body;
 
       for (i = 0; i < correct.length; i++) {
-        const remember = await Remember.findById(correct[i].rememberIds[0]._id);
+        const remember = await getRememberById(correct[i].rememberIds[0]._id);
         remember.correct += 1;
         remember.attempt += 1;
         await remember.save();
       }
 
       for (j = 0; j < incorrect.length; j++) {
-        const remember = await Remember.findById(
-          incorrect[j].rememberIds[0]._id
-        );
+        const remember = await getRememberById(incorrect[j].rememberIds[0]._id);
         remember.attempt += 1;
         await remember.save();
       }

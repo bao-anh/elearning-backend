@@ -3,6 +3,25 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const { check, validationResult } = require('express-validator');
 const { handleUnprocessableEntity } = require('../util');
+const { getUserById } = require('../services/user');
+const { getProgressById } = require('../services/progress');
+const { getOneToeicByUserId } = require('../services/toeic');
+const {
+  getOnePartByPartNumberWithPopulateProgress,
+  getOnePartByPartNumberWithPopulateTest,
+  getAllPartByUserIdWithPopulate,
+  getOnePartByUserIdWithPopulate,
+  getAllPartByUserId,
+} = require('../services/part');
+const {
+  getParticipantByIdWithPopulateTest,
+} = require('../services/participant');
+const { getOneScale } = require('../services/scale');
+const {
+  getQuestionByPartNumberWithPopulateChildren,
+  getQuestionByPartNumberWithPopulateParticipant,
+} = require('../services/question');
+const { getAllToeicWithoutPopulateUserAnswer } = require('../services/toeic');
 const auth = require('../middleware/auth');
 
 const Question = require('../models/Question');
@@ -19,12 +38,9 @@ const User = require('../models/User');
 // @access  Private
 router.get('/leaderboard/:id', auth, async (req, res) => {
   try {
-    const leaderboard = await Part.findOne({
-      partNumber: req.params.id,
-    }).populate({
-      path: 'progressIds',
-      populate: { path: 'userId', select: 'name' },
-    });
+    const leaderboard = await getOnePartByPartNumberWithPopulateProgress(
+      req.params.id
+    );
     handleUnprocessableEntity(leaderboard, res);
     res.json(leaderboard.progressIds);
   } catch (err) {
@@ -38,10 +54,7 @@ router.get('/leaderboard/:id', auth, async (req, res) => {
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
   try {
-    const test = await Participant.findById(req.params.id).populate({
-      path: 'testId',
-      populate: { path: 'questionIds', populate: { path: 'childrenIds' } },
-    });
+    const test = await getParticipantByIdWithPopulateTest(req.params.id);
     handleUnprocessableEntity(test, res);
     res.json({ participantIds: [test] });
   } catch (err) {
@@ -69,9 +82,9 @@ router.post(
       if (!isNaN(Number(testType)) && testType !== '7') {
         const numberOfQuestion =
           testType === '1' || testType === '2' || testType === '5' ? 10 : 4;
-        const question = await Question.find({
-          part: Number(testType),
-        }).populate({ path: 'childrenIds' });
+        const question = await getQuestionByPartNumberWithPopulateChildren(
+          Number(testType)
+        );
         let randomQuestionIds = [];
 
         for (i = 0; i < numberOfQuestion; i++) {
@@ -80,18 +93,9 @@ router.post(
           question.splice(randomIndex, 1);
         }
 
-        const part = await Part.findOne({
-          partNumber: Number(testType),
-        }).populate({
-          path: 'participantIds',
-          populate: {
-            path: 'testId userId',
-            populate: {
-              path: 'questionIds',
-              populate: { path: 'childrenIds' },
-            },
-          },
-        });
+        const part = await getOnePartByPartNumberWithPopulateTest(
+          Number(testType)
+        );
 
         res.json({
           randomQuestionIds,
@@ -99,12 +103,12 @@ router.post(
         });
       } else if (testType === '7') {
         const numberOfQuestion = 3;
-        const questionPart71 = await Question.find({
-          part: 7.1,
-        }).populate({ path: 'childrenIds' });
-        const questionPart72 = await Question.find({
-          part: 7.2,
-        }).populate({ path: 'childrenIds' });
+        const questionPart71 = await getQuestionByPartNumberWithPopulateChildren(
+          7.1
+        );
+        const questionPart72 = await getQuestionByPartNumberWithPopulateChildren(
+          7.2
+        );
 
         const question = [...questionPart71, ...questionPart72];
         let randomQuestionIds = [];
@@ -115,18 +119,9 @@ router.post(
           question.splice(randomIndex, 1);
         }
 
-        const part = await Part.findOne({
-          partNumber: Number(testType),
-        }).populate({
-          path: 'participantIds',
-          populate: {
-            path: 'testId userId',
-            populate: {
-              path: 'questionIds',
-              populate: { path: 'childrenIds' },
-            },
-          },
-        });
+        const part = await getOnePartByPartNumberWithPopulateTest(
+          Number(testType)
+        );
 
         res.json({
           randomQuestionIds,
@@ -183,29 +178,7 @@ router.post(
           }
         }
 
-        // const toeic = await Toeic.find({}).populate({
-        //   path: 'participantIds',
-        //   populate: {
-        //     path: 'testId userId',
-        //     populate: {
-        //       path: 'questionIds',
-        //       populate: { path: 'childrenIds' },
-        //     },
-        //   },
-        // });
-
-        const toeic = await Toeic.find({}).populate({
-          path: 'participantIds',
-          select: '-userAnswer',
-          populate: {
-            path: 'testId userId',
-            select: 'name',
-            populate: {
-              path: 'questionIds',
-              select: 'childrenIds',
-            },
-          },
-        });
+        const toeic = await getAllToeicWithoutPopulateUserAnswer();
 
         let participantIds = [];
 
@@ -259,11 +232,9 @@ router.post(
         let randomQuestionIds = [];
 
         for (i = 0; i < 8; i++) {
-          const question = await Question.find({
-            part: params[i].part,
-          }).populate({
-            path: 'childrenIds',
-          });
+          const question = await getQuestionByPartNumberWithPopulateChildren(
+            params[i].part
+          );
           for (j = 0; j < params[i].numberOfQuestion; j++) {
             const randomIndex = Math.floor(Math.random() * question.length);
             randomQuestionIds.push(question[randomIndex]);
@@ -271,18 +242,7 @@ router.post(
           }
         }
 
-        const toeic = await Toeic.find({}).populate({
-          path: 'participantIds',
-          select: '-userAnswer',
-          populate: {
-            path: 'testId userId',
-            select: 'name',
-            populate: {
-              path: 'questionIds',
-              select: 'childrenIds',
-            },
-          },
-        });
+        const toeic = await getAllToeicWithoutPopulateUserAnswer();
 
         let participantIds = [];
 
@@ -347,15 +307,10 @@ router.post(
       if (!isNaN(Number(testType))) {
         try {
           // Tìm kiếm part user đã làm
-          const part = await Part.findOne({
-            partNumber: Number(testType),
-          })
-            .populate({ path: 'progressIds', match: { userId: req.user._id } })
-            .populate({
-              path: 'participantIds',
-              match: { userId: req.user._id },
-              populate: { path: 'testId' },
-            });
+          const part = await getOnePartByUserIdWithPopulate(
+            Number(testType),
+            req.user._id
+          );
           // Những câu đầu tiên khi người dùng chưa làm bài nào
           let numberOfQuestion = 20;
 
@@ -376,7 +331,7 @@ router.post(
           part.participantIds.push(participant._id);
           await part.save({ session });
 
-          const user = await User.findById(req.user._id);
+          const user = await getUserById(req.user._id);
           user.participantIds.push(participant._id);
           await user.save({ session });
 
@@ -386,15 +341,12 @@ router.post(
               percentComplete * assignment.questionIds.length) /
             (numberOfQuestion + assignment.questionIds.length);
 
-          const progress = await Progress.findById(part.progressIds[0]._id);
+          const progress = await getProgressById(part.progressIds[0]._id);
           progress.percentComplete = Math.round(newProgress);
 
           await progress.save({ session });
           // Tính lại currentScore của user
-          const partIds = await Part.find({}).populate({
-            path: 'progressIds',
-            match: { userId: req.user._id },
-          });
+          const partIds = await getAllPartByUserId(req.uer._id);
 
           let listeningProgress = 0;
           let readingProgress = 0;
@@ -419,7 +371,7 @@ router.post(
               }
             }
           });
-          const scale = await Scale.findOne({});
+          const scale = await getOneScale();
 
           const listeningScore =
             scale.listening[Math.round(listeningProgress / 4)];
@@ -427,7 +379,7 @@ router.post(
 
           const currentScore = listeningScore + readingScore;
 
-          const toeic = await Toeic.findOne({ userId: req.user._id });
+          const toeic = await getOneToeicByUserId(req.user._id);
           toeic.currentScore = currentScore;
 
           await toeic.save({ session });
@@ -447,23 +399,17 @@ router.post(
         await participant.save({ session });
 
         // Lưu bài làm vào mảng Toeic
-        const toeic = await Toeic.findOne({ userId: req.user._id });
+        const toeic = await getOneToeicByUserId(req.user._id);
         toeic.participantIds.push(participant._id);
         await toeic.save({ session });
 
         // Lưu bài làm vào mảng User
-        const user = await User.findById(req.user._id);
+        const user = await getUserById(req.user._id);
         user.participantIds.push(participant._id);
         await user.save({ session });
 
         // Tìm kiếm part user đã làm
-        const partIds = await Part.find({})
-          .populate({ path: 'progressIds', match: { userId: req.user._id } })
-          .populate({
-            path: 'participantIds',
-            match: { userId: req.user._id },
-            populate: { path: 'testId' },
-          });
+        const partIds = await getAllPartByUserIdWithPopulate(req.user._id);
 
         let totalQuestionNumberIds = [20, 20, 20, 20, 20, 20, 20];
         let percentCompleteIds = [0, 0, 0, 0, 0, 0, 0];
@@ -489,7 +435,7 @@ router.post(
         const readingProgress =
           percentCompleteIds[4] + percentCompleteIds[5] + percentCompleteIds[6];
 
-        const scale = await Scale.findOne({});
+        const scale = await getOneScale();
         const listeningScore =
           scale.listening[Math.round(listeningProgress / 4)];
         const readingScore = scale.reading[Math.round(readingProgress / 3)];

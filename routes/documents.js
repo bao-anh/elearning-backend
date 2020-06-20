@@ -3,18 +3,19 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const { check, validationResult } = require('express-validator');
 const { handleUnprocessableEntity } = require('../util');
+const { getAllDocument, getDocumentById } = require('../services/document');
+const { getCourseById } = require('../services/course');
+const { getLessonById } = require('../services/lesson');
 const auth = require('../middleware/auth');
 
 const Document = require('../models/Document');
-const Lesson = require('../models/Lesson');
-const Course = require('../models/Course');
 
 // @route   GET api/documents
 // @desc    Get all documents
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const documents = await Document.find();
+    const documents = await getAllDocument();
     handleUnprocessableEntity(documents, res);
     res.json(documents);
   } catch (err) {
@@ -56,7 +57,7 @@ router.post(
 
       // If document is belong to course
       try {
-        const course = await Course.findById(courseId);
+        const course = await getCourseById(courseId);
         course.documentIds = [...course.documentIds, newDocument._id];
         await course.save({ session });
       } catch (err) {
@@ -68,7 +69,7 @@ router.post(
       // If document is belong to lesson
       if (lessonId) {
         try {
-          const lesson = await Lesson.findById(lessonId);
+          const lesson = await getLessonById(lessonId);
           lesson.documentIds = [...lesson.documentIds, newDocument._id];
           await lesson.save({ session });
         } catch (err) {
@@ -105,7 +106,7 @@ router.put('/:id', auth, async (req, res) => {
   } = req.body;
 
   try {
-    let topic = await Document.findById(req.params.id);
+    let topic = await getDocumentById(req.params.id);
     topic.name = name ? name : topic.name;
     topic.courseId = courseId ? courseId : topic.courseId;
     topic.lessonIds = lessonIds ? lessonIds : topic.lessonIds;

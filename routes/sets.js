@@ -3,12 +3,14 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const { check, validationResult } = require('express-validator');
 const { handleUnprocessableEntity } = require('../util');
+const { getUserByIdWithPopulateSet, getUserById } = require('../services/user');
+const { getSetByIdWithPopulate, getSetById } = require('../services/set');
+const { getTermById } = require('../services/term');
 const auth = require('../middleware/auth');
 const parser = require('../config/parse');
 
 const Set = require('../models/Set');
 const Term = require('../models/Term');
-const User = require('../models/User');
 const Remember = require('../models/Remember');
 
 // @route   GET api/sets
@@ -16,18 +18,7 @@ const Remember = require('../models/Remember');
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const userSet = await User.findById(req.user._id)
-      .populate({
-        path: 'setIds',
-        populate: [
-          {
-            path: 'termIds',
-            populate: { path: 'rememberIds', match: { userId: req.user._id } },
-          },
-          { path: 'ownerId ', select: 'name' },
-        ],
-      })
-      .select('setIds');
+    const userSet = await getUserByIdWithPopulateSet(req.user._id);
 
     handleUnprocessableEntity(userSet, res);
     res.json(userSet.setIds);
@@ -42,15 +33,7 @@ router.get('/', auth, async (req, res) => {
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
   try {
-    const set = await Set.findById(req.params.id)
-      .populate({
-        path: 'ownerId',
-        select: 'name',
-      })
-      .populate({
-        path: 'termIds',
-        populate: { path: 'rememberIds', match: { userId: req.user._id } },
-      });
+    const set = await getSetByIdWithPopulate(req.params.id, req.user._id);
 
     handleUnprocessableEntity(set, res);
     res.json(set);
@@ -83,7 +66,7 @@ router.post('/', auth, parser.single('imageURL'), async (req, res) => {
 
       await set.save({ session });
 
-      const user = await User.findById(req.user._id);
+      const user = await getUserById(req.user._id);
       user.setIds.push(set._id);
 
       user.save({ session });
@@ -112,14 +95,14 @@ router.post('/:id', auth, parser.single('imageURL'), async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-      const user = await User.findById(req.user._id);
+      const user = await getUserById(req.user._id);
       user.setIds.push(req.params.id);
       await user.save({ session });
 
-      const set = await Set.findById(req.params.id);
+      const set = await getSetById(req.params.id);
 
       for (i = 0; i < set.termIds.length; i++) {
-        const term = await Term.findById(set.termIds[i]._id);
+        const term = await getTermById(set.termIds[i]._id);
         console.log(term);
         const remember = new Remember({
           userId: req.user._id,
@@ -176,7 +159,7 @@ router.post('/:id/terms', auth, parser.single('imageURL'), async (req, res) => {
 
       await term.save({ session });
 
-      const set = await Set.findById(req.params.id);
+      const set = await getSetById(req.params.id);
       set.termIds.push(term._id);
 
       await set.save({ session });
@@ -208,7 +191,7 @@ router.put(
     try {
       const { name, definition, imageName } = req.body;
 
-      const term = await Term.findById(req.params.id);
+      const term = await getTermById(req.params.id);
       term.name = name;
       term.definition = definition;
       term.imageName = imageName;
@@ -231,7 +214,7 @@ router.put('/terms/:id/without-image', auth, async (req, res) => {
   try {
     const { name, definition } = req.body;
 
-    const term = await Term.findById(req.params.id);
+    const term = await getTermById(req.params.id);
     term.name = name;
     term.definition = definition;
 
@@ -253,7 +236,7 @@ router.delete('/:id/terms/:termId', auth, async (req, res) => {
     session.startTransaction();
 
     try {
-      const set = await Set.findById(req.params.id);
+      const set = await getSetById(req.params.id);
       const termIndex = set.termIds.indexOf(req.params.termId);
       set.termIds.splice(termIndex, 1);
 
@@ -288,7 +271,7 @@ router.put(
     try {
       const { name, description, visiable, editable } = req.body;
 
-      const set = await Set.findById(req.params.id);
+      const set = await getSetById(req.params.id);
       set.name = name;
       set.description = description;
       set.visiable = visiable;
@@ -312,7 +295,7 @@ router.put('/:id/without-image', auth, async (req, res) => {
   try {
     const { name, description, visiable, editable } = req.body;
 
-    const set = await Set.findById(req.params.id);
+    const set = await getSetById(req.params.id);
     set.name = name;
     set.description = description;
     set.visiable = visiable;

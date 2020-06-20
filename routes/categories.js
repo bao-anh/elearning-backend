@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
+const {
+  getAllCategory,
+  getAllCategoryWithPopulate,
+  getCategoryByIdWithPopulate,
+} = require('../services/category');
 const { handleUnprocessableEntity } = require('../util');
 
 const Category = require('../models/Category');
@@ -11,7 +16,7 @@ const Category = require('../models/Category');
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const categories = await Category.find();
+    const categories = await getAllCategory();
     handleUnprocessableEntity(categories, res);
     res.json(categories);
   } catch (err) {
@@ -25,7 +30,7 @@ router.get('/', auth, async (req, res) => {
 // @access  Private
 router.get('/get-all-with-course', auth, async (req, res) => {
   try {
-    const category = await Category.find().populate({ path: 'childrenIds' });
+    const category = await getAllCategoryWithPopulate();
     handleUnprocessableEntity(category, res);
     res.json(category);
   } catch (err) {
@@ -39,10 +44,10 @@ router.get('/get-all-with-course', auth, async (req, res) => {
 // @access  Private
 router.get('/:id/courses', auth, async (req, res) => {
   try {
-    const course = await Category.findById(req.params.id).populate({
-      path: 'courseIds',
-      populate: { path: 'progressIds', match: { userId: req.user._id } },
-    });
+    const course = await getCategoryByIdWithPopulate(
+      req.params.id,
+      req.user._id
+    );
     handleUnprocessableEntity(course, res);
     res.json(course);
   } catch (err) {
@@ -88,7 +93,7 @@ router.put('/:id', auth, async (req, res) => {
   const { name, childrenIds, courseIds } = req.body;
 
   try {
-    let category = await Category.findById(req.params.id);
+    let category = await getCategoryById(req.params.id);
     handleUnprocessableEntity(category, res);
     category.name = name ? name : category.name;
     category.childrenIds = childrenIds ? childrenIds : category.childrenIds;
@@ -99,13 +104,6 @@ router.put('/:id', auth, async (req, res) => {
     console.error(err);
     res.status(500).send('Sever Error');
   }
-});
-
-// @route   DELETE api/categories
-// @desc    Delete a category by id
-// @access  Private
-router.delete('/', (req, res) => {
-  res.send({ msg: 'Category deleted successfully' });
 });
 
 module.exports = router;

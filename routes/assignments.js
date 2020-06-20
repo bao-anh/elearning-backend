@@ -3,19 +3,23 @@ const mongoose = require('mongoose');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
+const {
+  getAllAssignment,
+  getAssignmentByIdWithPopulate,
+} = require('../services/assignment');
+const { getLessonById } = require('../services/lesson');
+const { getTopicById } = require('../services/topic');
+const { getQuestionByPartNumberSelectId } = require('../services/question');
 const { handleUnprocessableEntity } = require('../util');
 
 const Assignment = require('../models/Assignment');
-const Topic = require('../models/Topic');
-const Lesson = require('../models/Lesson');
-const Question = require('../models/Question');
 
 // @route   GET api/assigments
 // @desc    Get all assigments
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const assigments = await Assignment.find();
+    const assigments = await getAllAssignment();
     handleUnprocessableEntity(assigments, res);
     res.json(assigments);
   } catch (err) {
@@ -29,16 +33,10 @@ router.get('/', auth, async (req, res) => {
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
   try {
-    const assigment = await Assignment.findById(req.params.id)
-      .populate({
-        path: 'questionIds',
-        populate: { path: 'childrenIds' },
-      })
-      .populate({
-        path: 'participantIds',
-        populate: { path: 'userId' },
-      })
-      .populate({ path: 'progressIds', match: { userId: req.user._id } });
+    const assigment = await getAssignmentByIdWithPopulate(
+      req.params.id,
+      req.user._id
+    );
 
     handleUnprocessableEntity(assigment, res);
     let newAssignment = assigment;
@@ -111,7 +109,7 @@ router.post(
         try {
           if (!timeToShowUp)
             return res.status(400).json({ msg: 'Time to show up is required' });
-          const lesson = await Lesson.findById(lessonId);
+          const lesson = await getLessonById(lessonId);
           lesson.assignmentIds = [...lesson.assignmentIds, newAssignment._id];
           await lesson.save({ session });
         } catch (err) {
@@ -124,7 +122,7 @@ router.post(
       // If assignment inside a topic
       else {
         try {
-          const topic = await Topic.findById(topicId);
+          const topic = await getTopicById(topicId);
           topic.assignmentIds = [...topic.assignmentIds, newAssignment._id];
           await topic.save({ session });
         } catch (err) {
@@ -169,7 +167,7 @@ router.put('/:id', auth, async (req, res) => {
   } = req.body;
 
   try {
-    let assigment = await Assignment.findById(req.params.id);
+    let assigment = await getAssignmentById(req.params.id);
     assigment.name = name ? name : assigment.name;
     assigment.courseId = courseId ? courseId : assigment.courseId;
     assigment.topicId = topicId ? topicId : assigment.topicId;
@@ -202,9 +200,9 @@ router.put('/:id/random', auth, async (req, res) => {
   const { questionIds } = req.body;
 
   try {
-    let assigment = await Assignment.findById(req.params.id);
+    let assigment = await getAssignmentById(req.params.id);
 
-    let questions = await Question.find({ part: 7.2 }).select('_id');
+    let questions = await getQuestionByPartNumberSelectId(7.2);
     let questionArr = questions;
     let newQuestionIds = [];
     const min = 3;

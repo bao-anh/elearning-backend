@@ -4,6 +4,10 @@ const { check, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const config = require('config');
+const {
+  getUserByEmailWithPopulate,
+  getUserByIdWithPopulate,
+} = require('../services/user');
 const auth = require('../middleware/auth');
 
 const User = require('../models/User');
@@ -25,12 +29,7 @@ router.post(
 
     const { email, password } = req.body;
     try {
-      let user = await User.findOne({ email })
-        .populate({ path: 'courseIds', populate: { path: 'progressIds' } })
-        .populate({
-          path: 'participantIds',
-          select: 'score testId assignmentId date',
-        });
+      let user = await getUserByEmailWithPopulate(email);
 
       if (!user) {
         return res.status(400).json({ msg: 'User is not exist' });
@@ -69,13 +68,7 @@ router.post(
 // @access  Public
 router.get('/', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id)
-      .populate({ path: 'courseIds', populate: { path: 'progressIds' } })
-      .populate({
-        path: 'participantIds',
-        select: 'score testId assignmentId date',
-      })
-      .select('-password');
+    const user = await getUserByIdWithPopulate(req.user._id);
 
     res.json(user);
   } catch (err) {

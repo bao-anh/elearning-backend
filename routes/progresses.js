@@ -2,21 +2,24 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const { check, validationResult } = require('express-validator');
+const { getAllProgress, getProgressById } = require('../services/progress');
+const {
+  getAssignmentByIdWithPopulateProgress,
+} = require('../services/assignment');
+const { getTopicByIdWithPopulateProgress } = require('../services/topic');
+const { getLessonByIdWithPopulateProgress } = require('../services/lesson');
+const { getCourseByIdWithPopulateProgress } = require('../services/course');
 const { handleUnprocessableEntity } = require('../util');
 const auth = require('../middleware/auth');
 
 const Progress = require('../models/Progress');
-const Lesson = require('../models/Lesson');
-const Assignment = require('../models/Assignment');
-const Topic = require('../models/Topic');
-const Course = require('../models/Course');
 
 // @route   GET api/progress
 // @desc    Get all progress
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const progress = await Progress.find();
+    const progress = await getAllProgress();
     handleUnprocessableEntity(progress, res);
     res.json(progress);
   } catch (err) {
@@ -30,7 +33,7 @@ router.get('/', auth, async (req, res) => {
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
   try {
-    const progress = await Progress.findById(req.params.id);
+    const progress = await getProgressById(req.params.id);
     handleUnprocessableEntity(progress, res);
     res.json(progress);
   } catch (err) {
@@ -69,14 +72,12 @@ router.post(
 
     try {
       // set progress in assignment
-      const newAssignment = await Assignment.findById(assignmentId).populate({
-        path: 'progressIds',
-        match: { userId: req.user._id },
-      });
+      const newAssignment = await getAssignmentByIdWithPopulateProgress(
+        assignmentId,
+        req.user._id
+      );
       if (newAssignment.progressIds.length) {
-        let progress = await Progress.findById(
-          newAssignment.progressIds[0]._id
-        );
+        let progress = await getProgressById(newAssignment.progressIds[0]._id);
         progress.percentComplete = percentComplete + progress.percentComplete;
 
         await progress.save({ session });
@@ -98,18 +99,10 @@ router.post(
 
       if (lessonId) {
         try {
-          const lesson = await Lesson.findById(lessonId)
-            .populate({
-              path: 'progressIds',
-              match: { userId: req.user._id },
-            })
-            .populate({
-              path: 'assignmentIds',
-              populate: {
-                path: 'progressIds',
-                match: { userId: req.user._id },
-              },
-            });
+          const lesson = await getLessonByIdWithPopulateProgress(
+            lessonId,
+            req.user._id
+          );
 
           let lessonProgress = 0;
           // duyệt tất cả mảng assignmentIds
@@ -127,7 +120,7 @@ router.post(
           accPercentComplete = accPercentComplete / lesson.assignmentIds.length;
 
           if (lesson.progressIds.length) {
-            let progress = await Progress.findById(lesson.progressIds[0]._id);
+            let progress = await getProgressById(lesson.progressIds[0]._id);
             progress.percentComplete = lessonProgress;
 
             await progress.save({ session });
@@ -143,25 +136,10 @@ router.post(
           }
 
           // tăng phần trăm hoàn thành của topic
-          const topic = await Topic.findById(topicId)
-            .populate({
-              path: 'progressIds',
-              match: { userId: req.user._id },
-            })
-            .populate({
-              path: 'assignmentIds',
-              populate: {
-                path: 'progressIds',
-                match: { userId: req.user._id },
-              },
-            })
-            .populate({
-              path: 'lessonIds',
-              populate: {
-                path: 'progressIds',
-                match: { userId: req.user._id },
-              },
-            });
+          const topic = await getTopicByIdWithPopulateProgress(
+            topicId,
+            req.user._id
+          );
 
           let topicProgress = 0;
 
@@ -189,7 +167,7 @@ router.post(
             (topic.lessonIds.length + topic.assignmentIds.length);
 
           if (topic.progressIds.length) {
-            let progress = await Progress.findById(topic.progressIds[0]._id);
+            let progress = await getProgressById(topic.progressIds[0]._id);
 
             progress.percentComplete = topicProgress;
             await progress.save({ session });
@@ -205,18 +183,10 @@ router.post(
           }
 
           // tăng phần trăm hoàn thành của course
-          const course = await Course.findById(courseId)
-            .populate({
-              path: 'progressIds',
-              match: { userId: req.user._id },
-            })
-            .populate({
-              path: 'topicIds',
-              populate: {
-                path: 'progressIds',
-                match: { userId: req.user._id },
-              },
-            });
+          const course = await getCourseByIdWithPopulateProgress(
+            courseId,
+            req.user._id
+          );
 
           let courseProgress = 0;
 
@@ -232,7 +202,7 @@ router.post(
           courseProgress = courseProgress > 100 ? 100 : courseProgress;
 
           if (course.progressIds.length) {
-            let progress = await Progress.findById(course.progressIds[0]._id);
+            let progress = await getProgressById(course.progressIds[0]._id);
 
             progress.percentComplete = courseProgress;
             await progress.save({ session });
@@ -257,25 +227,10 @@ router.post(
       } else {
         try {
           // tăng phần trăm hoàn thành của topic
-          const topic = await Topic.findById(topicId)
-            .populate({
-              path: 'progressIds',
-              match: { userId: req.user._id },
-            })
-            .populate({
-              path: 'assignmentIds',
-              populate: {
-                path: 'progressIds',
-                match: { userId: req.user._id },
-              },
-            })
-            .populate({
-              path: 'lessonIds',
-              populate: {
-                path: 'progressIds',
-                match: { userId: req.user._id },
-              },
-            });
+          const topic = await getTopicByIdWithPopulateProgress(
+            topicId,
+            req.user._id
+          );
 
           let topicProgress = 0;
 
@@ -303,7 +258,7 @@ router.post(
             (topic.lessonIds.length + topic.assignmentIds.length);
 
           if (topic.progressIds.length) {
-            let progress = await Progress.findById(topic.progressIds[0]._id);
+            let progress = await getProgressById(topic.progressIds[0]._id);
 
             progress.percentComplete = topicProgress;
             await progress.save({ session });
@@ -319,18 +274,10 @@ router.post(
           }
 
           // tăng phần trăm hoàn thành của course
-          const course = await Course.findById(courseId)
-            .populate({
-              path: 'progressIds',
-              match: { userId: req.user._id },
-            })
-            .populate({
-              path: 'topicIds',
-              populate: {
-                path: 'progressIds',
-                match: { userId: req.user._id },
-              },
-            });
+          const course = await getCourseByIdWithPopulateProgress(
+            courseId,
+            req.user._id
+          );
 
           let courseProgress = 0;
 
@@ -346,7 +293,7 @@ router.post(
           courseProgress = courseProgress > 100 ? 100 : courseProgress;
 
           if (course.progressIds.length) {
-            let progress = await Progress.findById(course.progressIds[0]._id);
+            let progress = await getProgressById(course.progressIds[0]._id);
 
             progress.percentComplete = courseProgress;
             await progress.save({ session });
@@ -382,36 +329,5 @@ router.post(
     }
   }
 );
-
-// @route   PUT api/progress
-// @desc    Update a topic by id
-// @access  Private
-router.put('/:id', auth, async (req, res) => {
-  const {
-    name,
-    courseId,
-    lessonIds,
-    assignmentIds,
-    isFree,
-    commentId,
-    progressIds,
-  } = req.body;
-
-  try {
-    let topic = await Progress.findById(req.params.id);
-    topic.name = name ? name : topic.name;
-    topic.courseId = courseId ? courseId : topic.courseId;
-    topic.lessonIds = lessonIds ? lessonIds : topic.lessonIds;
-    topic.assignmentIds = assignmentIds ? assignmentIds : topic.assignmentIds;
-    topic.isFree = isFree ? isFree : topic.isFree;
-    topic.commentId = commentId ? commentId : topic.commentId;
-    topic.progressIds = progressIds ? progressIds : topic.progressIds;
-    await topic.save();
-    res.json(topic);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Sever Error');
-  }
-});
 
 module.exports = router;

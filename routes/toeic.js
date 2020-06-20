@@ -3,23 +3,26 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const { check, validationResult } = require('express-validator');
 const { handleUnprocessableEntity } = require('../util');
+const {
+  getOneToeicWithPopulate,
+  getAllToeicWithPopulate,
+  getOneToeicByUserId,
+} = require('../services/toeic');
+const { getOneScale } = require('../services/scale');
+const { getUserById } = require('../services/user');
+const { getOnePartByPartNumber, getAllPart } = require('../services/part');
 const auth = require('../middleware/auth');
 
 const Toeic = require('../models/Toeic');
-const Part = require('../models/Part');
-const Scale = require('../models/Scale');
 const Progress = require('../models/Progress');
-const User = require('../models/User');
 
 // @route   GET api/toeic
 // @desc    Get toeic by userId
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const toeic = await Toeic.findOne({ userId: req.user._id }).populate({
-      path: 'partIds',
-      populate: { path: 'progressIds', match: { userId: req.user._id } },
-    });
+    const toeic = await getOneToeicWithPopulate(req.user._id);
+
     handleUnprocessableEntity(toeic, res);
     res.json(toeic);
   } catch (err) {
@@ -33,9 +36,7 @@ router.get('/', auth, async (req, res) => {
 // @access  Private
 router.get('/leaderboard', auth, async (req, res) => {
   try {
-    const leaderboard = await Toeic.find({})
-      .populate({ path: 'userId', select: 'name' })
-      .select('currentScore');
+    const leaderboard = await getAllToeicWithPopulate();
     handleUnprocessableEntity(leaderboard, res);
     res.json(leaderboard);
   } catch (err) {
@@ -49,8 +50,8 @@ router.get('/leaderboard', auth, async (req, res) => {
 // @access  Private
 router.put('/scores', auth, async (req, res) => {
   try {
-    const toeic = await Toeic.findOne({ userId: req.user._id });
-    const scale = await Scale.findOne({});
+    const toeic = await getOneToeicByUserId(req.user._id);
+    const scale = await getOneScale();
     const roundingTargetScore = Math.round(req.body.targetScore / 2 / 5) * 5;
 
     let roundingListeningScore = roundingTargetScore;
@@ -100,7 +101,7 @@ router.post(
       const { currentScore, targetScore } = req.body;
 
       try {
-        const scale = await Scale.findOne({});
+        const scale = await getOneScale();
         const roundingCurrentScore = Math.round(currentScore / 2 / 5) * 5;
 
         let roundingListeningScore = roundingCurrentScore;
@@ -156,7 +157,7 @@ router.post(
 
           await progress.save({ session });
 
-          const part = await Part.findOne({ partNumber });
+          const part = await getOnePartByPartNumber(partNumber);
           part.progressIds.push(progress._id);
           await part.save({ session });
         });
@@ -169,12 +170,12 @@ router.post(
 
           await progress.save({ session });
 
-          const part = await Part.findOne({ partNumber });
+          const part = await getOnePartByPartNumber(partNumber);
           part.progressIds.push(progress._id);
           await part.save({ session });
         });
 
-        const toeicPartIds = await Part.find({}).select('_id');
+        const toeicPartIds = await getAllPart();
 
         const toeic = new Toeic({
           userId: req.user._id,
@@ -186,7 +187,7 @@ router.post(
 
         await toeic.save({ session });
 
-        const user = await User.findById(req.user._id);
+        const user = await getUserById(req.user._id);
         user.toeicId = toeic._id;
         await user.save({ session });
 

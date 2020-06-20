@@ -3,20 +3,23 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const { check, validationResult } = require('express-validator');
 const { handleUnprocessableEntity } = require('../util');
+const {
+  getCourseById,
+  getAllCourseWithPopulate,
+  getCourseByIdWithPopulate,
+  getAllCourseWithPopulateProgress,
+} = require('../services/course');
+const { getCategoryById } = require('../services/category');
 const auth = require('../middleware/auth');
 
 const Course = require('../models/Course');
-const Category = require('../models/Category');
 
 // @route   GET api/courses
 // @desc    Get all course with user's progress
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const course = await Course.find().populate({
-      path: 'progressIds',
-      match: { userId: req.user._id },
-    });
+    const course = await getAllCourseWithPopulate(req.user._id);
     handleUnprocessableEntity(course, res);
     res.json(course);
   } catch (err) {
@@ -58,15 +61,7 @@ router.get('/:id', auth, async (req, res) => {
 // @access  Private
 router.get('/:id/topics', auth, async (req, res) => {
   try {
-    const topic = await Course.findById(req.params.id)
-      .populate({
-        path: 'progressIds',
-        match: { userId: req.user._id },
-      })
-      .populate({
-        path: 'topicIds',
-        populate: { path: 'progressIds', match: { userId: req.user._id } },
-      });
+    const topic = await getCourseByIdWithPopulate(req.params.id, req.user._id);
     handleUnprocessableEntity(topic, res);
     res.json(topic);
   } catch (err) {
@@ -80,12 +75,7 @@ router.get('/:id/topics', auth, async (req, res) => {
 // @access  Private
 router.get('/get-all-with-category', auth, async (req, res) => {
   try {
-    const course = await Course.find()
-      .populate({ path: 'categoryIds' })
-      .populate({
-        path: 'progressIds',
-        match: { userId: req.user._id },
-      });
+    const course = await getAllCourseWithPopulateProgress(req.user._id);
     handleUnprocessableEntity(course, res);
     res.json(course);
   } catch (err) {
@@ -151,7 +141,7 @@ router.post(
       await newCourse.save({ session });
 
       try {
-        const category = await Category.findById(categoryId);
+        const category = await getCategoryById(categoryId);
         category.courseIds = [...category.courseIds, newCourse._id];
         await category.save({ session });
       } catch (err) {
@@ -193,7 +183,7 @@ router.put('/:id', auth, async (req, res) => {
   } = req.body;
 
   try {
-    let course = await Course.findById(req.params.id);
+    let course = await getCourseById(req.params.id);
     course.name = name ? name : course.name;
     course.currentPrice = currentPrice ? currentPrice : course.currentPrice;
     course.realPrice = realPrice ? realPrice : course.realPrice;
@@ -219,7 +209,7 @@ router.put('/:id', auth, async (req, res) => {
 // @access  Private
 router.put('/:id/user', auth, async (req, res) => {
   try {
-    const course = await Course.findById(req.params.id);
+    const course = await getCourseById(req.params.id);
 
     course.memberIds.push(req.user._id);
     await course.save();
@@ -230,7 +220,5 @@ router.put('/:id/user', auth, async (req, res) => {
     res.status(500).send('Sever Error');
   }
 });
-
-module.exports = router;
 
 module.exports = router;

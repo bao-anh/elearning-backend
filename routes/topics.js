@@ -3,17 +3,22 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const { check, validationResult } = require('express-validator');
 const { handleUnprocessableEntity } = require('../util');
+const {
+  getAllTopic,
+  getTopicByIdWithPopulate,
+  getTopicById,
+} = require('../services/topic');
+const { getCourseById } = require('../services/course');
 const auth = require('../middleware/auth');
 
 const Topic = require('../models/Topic');
-const Course = require('../models/Course');
 
 // @route   GET api/topics
 // @desc    Get all topics
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const topics = await Topic.find();
+    const topics = await getAllTopic();
     handleUnprocessableEntity(topics, res);
     res.json(topics);
   } catch (err) {
@@ -27,20 +32,7 @@ router.get('/', auth, async (req, res) => {
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
   try {
-    const topics = await Topic.findById(req.params.id)
-      .populate({
-        path: 'progressIds',
-        match: { userId: req.user._id },
-      })
-      .populate({
-        path: 'lessonIds',
-        populate: { path: 'progressIds', match: { userId: req.user._id } },
-      })
-      .populate({
-        path: 'assignmentIds',
-        populate: { path: 'progressIds', match: { userId: req.user._id } },
-      })
-      .populate({ path: 'assignmentIds', populate: { path: 'questionIds' } });
+    const topics = await getTopicByIdWithPopulate(req.params.id, req.user._id);
     handleUnprocessableEntity(topics, res);
     res.json(topics);
   } catch (err) {
@@ -91,7 +83,7 @@ router.post(
       await newtopic.save({ session });
 
       try {
-        const course = await Course.findById(courseId);
+        const course = await getCourseById(courseId);
         course.topicIds = [...course.topicIds, newtopic._id];
         await course.save({ session });
       } catch (err) {
@@ -127,7 +119,7 @@ router.put('/:id', auth, async (req, res) => {
   } = req.body;
 
   try {
-    let topic = await Topic.findById(req.params.id);
+    let topic = await getTopicById(req.params.id);
     topic.name = name ? name : topic.name;
     topic.courseId = courseId ? courseId : topic.courseId;
     topic.lessonIds = lessonIds ? lessonIds : topic.lessonIds;
@@ -141,13 +133,6 @@ router.put('/:id', auth, async (req, res) => {
     console.error(err);
     res.status(500).send('Sever Error');
   }
-});
-
-// @route   DELETE api/categories
-// @desc    Delete a category by id
-// @access  Private
-router.delete('/', (req, res) => {
-  res.send({ msg: 'Category deleted successfully' });
 });
 
 module.exports = router;

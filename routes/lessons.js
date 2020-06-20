@@ -2,18 +2,23 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const { check, validationResult } = require('express-validator');
+const {
+  getAllLesson,
+  getLessonById,
+  getLessonByIdWithPopulate,
+} = require('../services/lesson');
+const { getTopicById } = require('../services/topic');
 const { handleUnprocessableEntity } = require('../util');
 const auth = require('../middleware/auth');
 
 const Lesson = require('../models/Lesson');
-const Topic = require('../models/Topic');
 
 // @route   GET api/lessons
 // @desc    Get all lessons
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const lessons = await Lesson.find();
+    const lessons = await getAllLesson();
     handleUnprocessableEntity(lessons, res);
     res.json(lessons);
   } catch (err) {
@@ -27,20 +32,7 @@ router.get('/', auth, async (req, res) => {
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
   try {
-    const lesson = await Lesson.findById(req.params.id)
-      .populate({
-        path: ' progressIds',
-        match: { userId: req.user._id },
-      })
-      .populate({
-        path: 'assignmentIds',
-        populate: { path: 'questionIds', populate: { path: 'childrenIds' } },
-      })
-      .populate({
-        path: 'assignmentIds',
-        populate: { path: 'progressIds', match: { userId: req.user._id } },
-      })
-      .populate({ path: 'documentIds' });
+    const lesson = await getLessonByIdWithPopulate(req.params.id, req.user._id);
     handleUnprocessableEntity(lesson, res);
     res.json(lesson);
   } catch (err) {
@@ -100,7 +92,7 @@ router.post(
       await newLesson.save({ session });
 
       try {
-        const topic = await Topic.findById(topicId);
+        const topic = await getTopicById(topicId);
         topic.lessonIds = [...topic.lessonIds, newLesson._id];
         await topic.save({ session });
       } catch (err) {
@@ -139,7 +131,7 @@ router.put('/:id', auth, async (req, res) => {
   } = req.body;
 
   try {
-    let lesson = await Lesson.findById(req.params.id);
+    let lesson = await getLessonById(req.params.id);
     lesson.name = name ? name : lesson.name;
     lesson.courseId = courseId ? courseId : lesson.courseId;
     lesson.topicId = topicId ? topicId : lesson.topicId;

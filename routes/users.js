@@ -6,6 +6,11 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const config = require('config');
 const { handleUnprocessableEntity } = require('../util');
+const {
+  getUserByIdWithPopulateCourse,
+  getUserByEmail,
+  getUserById,
+} = require('../services/user');
 
 const User = require('../models/User');
 
@@ -14,14 +19,7 @@ const User = require('../models/User');
 // @access  Private
 router.get('/:id/courses', auth, async (req, res) => {
   try {
-    const courses = await User.findById(req.params.id)
-      .populate({
-        path: 'courseIds',
-      })
-      .populate({
-        path: 'courseIds',
-        populate: { path: 'progressIds', match: { userId: req.params.id } },
-      });
+    const courses = await getUserByIdWithPopulateCourse(req.user._id);
     handleUnprocessableEntity(courses, res);
     res.json(courses);
   } catch (err) {
@@ -51,7 +49,7 @@ router.post(
 
     const { name, email, password } = req.body;
     try {
-      let user = await User.findOne({ email });
+      let user = await getUserByEmail(email);
       if (user) {
         return res.status(400).json({ msg: 'User already existed' });
       }
@@ -97,7 +95,7 @@ router.post(
 // @access  Private
 router.put('/courses', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await getUserById(req.user._id);
     user.courseIds.push(req.body.courseId);
     await user.save();
 

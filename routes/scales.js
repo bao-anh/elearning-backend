@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
+const { getOneScale } = require('../services/scale');
 const auth = require('../middleware/auth');
 
 const Scale = require('../models/Scale');
@@ -10,7 +11,7 @@ const Scale = require('../models/Scale');
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const scale = await Scale.findOne({});
+    const scale = await getOneScale();
     res.json(scale);
   } catch (err) {
     console.error(err);

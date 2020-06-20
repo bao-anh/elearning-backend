@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const { check, validationResult } = require('express-validator');
+const { handleUnprocessableEntity } = require('../util');
 const auth = require('../middleware/auth');
 
 const Document = require('../models/Document');
@@ -14,6 +15,7 @@ const Course = require('../models/Course');
 router.get('/', auth, async (req, res) => {
   try {
     const documents = await Document.find();
+    handleUnprocessableEntity(documents, res);
     res.json(documents);
   } catch (err) {
     console.error(err);

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const { check, validationResult } = require('express-validator');
+const { handleUnprocessableEntity } = require('../util');
 const auth = require('../middleware/auth');
 const parser = require('../config/parse');
 
@@ -28,6 +29,7 @@ router.get('/', auth, async (req, res) => {
       })
       .select('setIds');
 
+    handleUnprocessableEntity(userSet, res);
     res.json(userSet.setIds);
   } catch (err) {
     console.error(err);
@@ -50,6 +52,7 @@ router.get('/:id', auth, async (req, res) => {
         populate: { path: 'rememberIds', match: { userId: req.user._id } },
       });
 
+    handleUnprocessableEntity(set, res);
     res.json(set);
   } catch (err) {
     console.error(err);

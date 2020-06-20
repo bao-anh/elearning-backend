@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
+const { handleUnprocessableEntity } = require('../util');
 
 const Category = require('../models/Category');
 
@@ -11,6 +12,7 @@ const Category = require('../models/Category');
 router.get('/', auth, async (req, res) => {
   try {
     const categories = await Category.find();
+    handleUnprocessableEntity(categories, res);
     res.json(categories);
   } catch (err) {
     console.error(err);
@@ -24,6 +26,7 @@ router.get('/', auth, async (req, res) => {
 router.get('/get-all-with-course', auth, async (req, res) => {
   try {
     const category = await Category.find().populate({ path: 'childrenIds' });
+    handleUnprocessableEntity(category, res);
     res.json(category);
   } catch (err) {
     console.error(err);
@@ -40,6 +43,7 @@ router.get('/:id/courses', auth, async (req, res) => {
       path: 'courseIds',
       populate: { path: 'progressIds', match: { userId: req.user._id } },
     });
+    handleUnprocessableEntity(course, res);
     res.json(course);
   } catch (err) {
     console.error(err);
@@ -85,6 +89,7 @@ router.put('/:id', auth, async (req, res) => {
 
   try {
     let category = await Category.findById(req.params.id);
+    handleUnprocessableEntity(category, res);
     category.name = name ? name : category.name;
     category.childrenIds = childrenIds ? childrenIds : category.childrenIds;
     category.courseIds = courseIds ? courseIds : category.courseIds;

@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const config = require('config');
+const { handleUnprocessableEntity } = require('../util');
 
 const User = require('../models/User');
 
@@ -21,6 +22,7 @@ router.get('/:id/courses', auth, async (req, res) => {
         path: 'courseIds',
         populate: { path: 'progressIds', match: { userId: req.params.id } },
       });
+    handleUnprocessableEntity(courses, res);
     res.json(courses);
   } catch (err) {
     console.error(err);

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const { check, validationResult } = require('express-validator');
+const { handleUnprocessableEntity } = require('../util');
 const auth = require('../middleware/auth');
 
 const Toeic = require('../models/Toeic');
@@ -19,6 +20,7 @@ router.get('/', auth, async (req, res) => {
       path: 'partIds',
       populate: { path: 'progressIds', match: { userId: req.user._id } },
     });
+    handleUnprocessableEntity(toeic, res);
     res.json(toeic);
   } catch (err) {
     console.error(err);
@@ -34,6 +36,7 @@ router.get('/leaderboard', auth, async (req, res) => {
     const leaderboard = await Toeic.find({})
       .populate({ path: 'userId', select: 'name' })
       .select('currentScore');
+    handleUnprocessableEntity(leaderboard, res);
     res.json(leaderboard);
   } catch (err) {
     console.error(err);

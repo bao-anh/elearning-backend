@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const { check, validationResult } = require('express-validator');
+const { handleUnprocessableEntity } = require('../util');
 const auth = require('../middleware/auth');
 
 const Question = require('../models/Question');
@@ -24,6 +25,7 @@ router.get('/leaderboard/:id', auth, async (req, res) => {
       path: 'progressIds',
       populate: { path: 'userId', select: 'name' },
     });
+    handleUnprocessableEntity(leaderboard, res);
     res.json(leaderboard.progressIds);
   } catch (err) {
     console.error(err);
@@ -40,6 +42,7 @@ router.get('/:id', auth, async (req, res) => {
       path: 'testId',
       populate: { path: 'questionIds', populate: { path: 'childrenIds' } },
     });
+    handleUnprocessableEntity(test, res);
     res.json({ participantIds: [test] });
   } catch (err) {
     console.error(err);

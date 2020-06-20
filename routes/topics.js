@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const { check, validationResult } = require('express-validator');
+const { handleUnprocessableEntity } = require('../util');
 const auth = require('../middleware/auth');
 
 const Topic = require('../models/Topic');
@@ -13,6 +14,7 @@ const Course = require('../models/Course');
 router.get('/', auth, async (req, res) => {
   try {
     const topics = await Topic.find();
+    handleUnprocessableEntity(topics, res);
     res.json(topics);
   } catch (err) {
     console.error(err);
@@ -39,6 +41,7 @@ router.get('/:id', auth, async (req, res) => {
         populate: { path: 'progressIds', match: { userId: req.user._id } },
       })
       .populate({ path: 'assignmentIds', populate: { path: 'questionIds' } });
+    handleUnprocessableEntity(topics, res);
     res.json(topics);
   } catch (err) {
     console.error(err);

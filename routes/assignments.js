@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
+const { handleUnprocessableEntity } = require('../util');
 
 const Assignment = require('../models/Assignment');
 const Topic = require('../models/Topic');
@@ -15,6 +16,7 @@ const Question = require('../models/Question');
 router.get('/', auth, async (req, res) => {
   try {
     const assigments = await Assignment.find();
+    handleUnprocessableEntity(assigments, res);
     res.json(assigments);
   } catch (err) {
     console.error(err);
@@ -38,6 +40,7 @@ router.get('/:id', auth, async (req, res) => {
       })
       .populate({ path: 'progressIds', match: { userId: req.user._id } });
 
+    handleUnprocessableEntity(assigment, res);
     let newAssignment = assigment;
     newAssignment.participantIds = assigment.participantIds.reverse();
 
@@ -230,13 +233,6 @@ router.put('/:id/random', auth, async (req, res) => {
     console.error(err);
     res.status(500).send('Sever Error');
   }
-});
-
-// @route   DELETE api/categories
-// @desc    Delete a category by id
-// @access  Private
-router.delete('/', (req, res) => {
-  res.send({ msg: 'Category deleted successfully' });
 });
 
 module.exports = router;

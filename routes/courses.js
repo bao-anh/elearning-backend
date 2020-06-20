@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const { check, validationResult } = require('express-validator');
+const { handleUnprocessableEntity } = require('../util');
 const auth = require('../middleware/auth');
 
 const Course = require('../models/Course');
@@ -16,6 +17,7 @@ router.get('/', auth, async (req, res) => {
       path: 'progressIds',
       match: { userId: req.user._id },
     });
+    handleUnprocessableEntity(course, res);
     res.json(course);
   } catch (err) {
     console.error(err);
@@ -43,6 +45,7 @@ router.get('/:id', auth, async (req, res) => {
         path: 'topicIds',
         populate: { path: 'progressIds', match: { userId: req.user._id } },
       });
+    handleUnprocessableEntity(topic, res);
     res.json(topic);
   } catch (err) {
     console.error(err);
@@ -64,6 +67,7 @@ router.get('/:id/topics', auth, async (req, res) => {
         path: 'topicIds',
         populate: { path: 'progressIds', match: { userId: req.user._id } },
       });
+    handleUnprocessableEntity(topic, res);
     res.json(topic);
   } catch (err) {
     console.error(err);
@@ -82,6 +86,7 @@ router.get('/get-all-with-category', auth, async (req, res) => {
         path: 'progressIds',
         match: { userId: req.user._id },
       });
+    handleUnprocessableEntity(course, res);
     res.json(course);
   } catch (err) {
     console.error(err);

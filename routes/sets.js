@@ -69,7 +69,7 @@ router.post('/', auth, parser.single('imageURL'), async (req, res) => {
       const user = await getUserById(req.user._id);
       user.setIds.push(set._id);
 
-      user.save({ session });
+      await user.save({ session });
     } catch (err) {
       await session.abortTransaction();
       session.endSession();

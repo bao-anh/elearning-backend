@@ -7,6 +7,8 @@ const { getUserById } = require('../services/user');
 const { getProgressById } = require('../services/progress');
 const { getOneToeicByUserId } = require('../services/toeic');
 const {
+  getAllPart,
+  getOnePartByPartNumber,
   getOnePartByPartNumberWithPopulateProgress,
   getOnePartByPartNumberWithPopulateTest,
   getAllPartByUserIdWithPopulate,
@@ -25,13 +27,10 @@ const { getAllToeicWithoutPopulateUserAnswer } = require('../services/toeic');
 const auth = require('../middleware/auth');
 
 const Question = require('../models/Question');
-const Part = require('../models/Part');
 const Test = require('../models/Test');
+const Toeic = require('../models/Toeic');
 const Participant = require('../models/Participant');
 const Progress = require('../models/Progress');
-const Scale = require('../models/Scale');
-const Toeic = require('../models/Toeic');
-const User = require('../models/User');
 
 // @route   GET api/tests/leaderboard
 // @desc    Get a leaderboard by part number
@@ -346,7 +345,7 @@ router.post(
 
           await progress.save({ session });
           // Tính lại currentScore của user
-          const partIds = await getAllPartByUserId(req.uer._id);
+          const partIds = await getAllPartByUserId(req.user._id);
 
           let listeningProgress = 0;
           let readingProgress = 0;
@@ -452,6 +451,112 @@ router.post(
           await progress.save({ session });
         }
       }
+
+      await session.commitTransaction();
+      session.endSession();
+
+      res.json({ msg: 'Everything done!' });
+    } catch (err) {
+      await session.commitTransaction();
+      session.endSession();
+      console.error(err);
+      res.status(500).send('Sever Error');
+    }
+  }
+);
+
+router.post(
+  '/first-time',
+  [
+    check('assignment', 'Assignment is required').exists(),
+    check('score', 'Score is required').exists(),
+    check('percentComplete', 'Percent complete is required').exists(),
+    check('userAnswer', 'User answer is required').exists(),
+  ],
+  auth,
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    const {
+      assignment,
+      userAnswer,
+      score,
+      percentComplete,
+      numberOfQuestionIds,
+    } = req.body;
+
+    try {
+      // Lưu thông tin bài test
+      const test = new Test({
+        name: assignment.name,
+        questionIds: assignment.questionIds,
+        duration: assignment.duration,
+      });
+
+      await test.save({ session });
+
+      const participant = new Participant({
+        userId: req.user._id,
+        testId: test._id,
+        userAnswer,
+        score,
+      });
+      await participant.save({ session });
+
+      // Tìm kiếm part user đã làm
+      const partIds = await getAllPartByUserIdWithPopulate(req.user._id);
+
+      let percentCompleteIds = percentComplete;
+
+      const listeningProgress =
+        percentCompleteIds[0] +
+        percentCompleteIds[1] +
+        percentCompleteIds[2] +
+        percentCompleteIds[3];
+
+      const readingProgress =
+        percentCompleteIds[4] + percentCompleteIds[5] + percentCompleteIds[6];
+
+      const scale = await getOneScale();
+      const listeningScore = scale.listening[Math.round(listeningProgress / 4)];
+      const readingScore = scale.reading[Math.round(readingProgress / 3)];
+
+      for (i = 1; i <= 7; i++) {
+        const progress = new Progress({
+          userId: req.user._id,
+          percentComplete: percentCompleteIds[i],
+        });
+
+        await progress.save({ session });
+
+        const part = await getOnePartByPartNumber(i);
+        part.progressIds.push(progress._id);
+        await part.save({ session });
+      }
+
+      const toeicPartIds = await getAllPart();
+
+      const toeic = new Toeic({
+        userId: req.user._id,
+        partIds: toeicPartIds.map((part) => part._id),
+        minScore: listeningScore + readingScore,
+        currentScore: listeningScore + readingScore,
+        targetScore: 990,
+        participantIds: [participant._id],
+      });
+      await toeic.save({ session });
+
+      // Lưu bài làm vào mảng User
+      const user = await getUserById(req.user._id);
+      user.participantIds.push(participant._id);
+      user.toeicId = toeic._id;
+      await user.save({ session });
 
       await session.commitTransaction();
       session.endSession();

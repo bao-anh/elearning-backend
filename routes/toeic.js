@@ -78,8 +78,8 @@ router.put('/scores', auth, async (req, res) => {
   }
 });
 
-// @route   GET api/questions
-// @desc    Query question
+// @route   GET api/toeics/scores
+// @desc    Submit toeic score
 // @access  Public
 router.post(
   '/scores',
@@ -148,8 +148,8 @@ router.post(
         const newTargetScore =
           roundingListeningTargetScore + roundingReadingTargetScore;
 
-        // Đưa phần trăm hoàn thành vào reading part
-        [1, 2, 3, 4].forEach(async (partNumber) => {
+        // Đưa phần trăm hoàn thành vào listening part
+        for (i = 1; i <= 4; i++) {
           const progress = new Progress({
             userId: req.user._id,
             percentComplete: currentPercentListeningScore,
@@ -157,12 +157,12 @@ router.post(
 
           await progress.save({ session });
 
-          const part = await getOnePartByPartNumber(partNumber);
+          const part = await getOnePartByPartNumber(i);
           part.progressIds.push(progress._id);
           await part.save({ session });
-        });
+        }
         // Đưa phần trăm hoàn thành vào reading part
-        [5, 6, 7].forEach(async (partNumber) => {
+        for (i = 5; i <= 7; i++) {
           const progress = new Progress({
             userId: req.user._id,
             percentComplete: currentPercentReadingScore,
@@ -170,10 +170,10 @@ router.post(
 
           await progress.save({ session });
 
-          const part = await getOnePartByPartNumber(partNumber);
+          const part = await getOnePartByPartNumber(i);
           part.progressIds.push(progress._id);
           await part.save({ session });
-        });
+        }
 
         const toeicPartIds = await getAllPart();
 

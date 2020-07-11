@@ -6,6 +6,7 @@ const auth = require('../middleware/auth');
 const {
   getAllAssignment,
   getAssignmentByIdWithPopulate,
+  getAssignmentByIdAndReverseParticipant,
 } = require('../services/assignment');
 const { getLessonById } = require('../services/lesson');
 const { getTopicById } = require('../services/topic');
@@ -33,16 +34,13 @@ router.get('/', auth, async (req, res) => {
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
   try {
-    const assigment = await getAssignmentByIdWithPopulate(
+    const assigment = await getAssignmentByIdAndReverseParticipant(
       req.params.id,
-      req.user._id
+      req.user._id,
+      res
     );
 
-    handleUnprocessableEntity(assigment, res);
-    let newAssignment = assigment;
-    newAssignment.participantIds = assigment.participantIds.reverse();
-
-    res.json(newAssignment);
+    res.json(assigment);
   } catch (err) {
     console.error(err);
     res.status(500).send('Sever Error');

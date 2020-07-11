@@ -51,10 +51,12 @@ const AssignmentSchema = Schema({
     type: Number,
     default: 100,
   },
-  commentId: {
-    type: Schema.Types.ObjectId,
-    ref: 'comment',
-  },
+  commentIds: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'comment',
+    },
+  ],
   progressIds: [
     {
       type: Schema.Types.ObjectId,

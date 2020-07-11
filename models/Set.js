@@ -14,6 +14,12 @@ const SetSchema = Schema({
     type: Schema.Types.ObjectId,
     ref: 'user',
   },
+  userIds: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'user',
+    },
+  ],
   imageURL: {
     type: String,
   },

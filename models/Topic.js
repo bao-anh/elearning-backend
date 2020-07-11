@@ -26,10 +26,12 @@ const TopicSchema = Schema({
     type: Boolean,
     default: false,
   },
-  commentId: {
-    type: Schema.Types.ObjectId,
-    ref: 'comment',
-  },
+  commentIds: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'comment',
+    },
+  ],
   progressIds: [
     {
       type: Schema.Types.ObjectId,

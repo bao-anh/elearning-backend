@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const parser = require('../config/parse');
 const { check, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
@@ -103,6 +104,47 @@ router.put('/courses', auth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send('Sever Error');
+  }
+});
+
+// @route   PUT api/users
+// @desc    Update user's info with image
+// @access  Private
+router.put('/with-image', auth, parser.single('imageURL'), async (req, res) => {
+  try {
+    const { name } = req.body;
+
+    const user = await getUserById(req.user._id);
+
+    user.name = name;
+    user.imageURL = req.file ? req.file.path : null;
+
+    await user.save();
+
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
+});
+
+// @route   PUT api/users
+// @desc    Update user's info without image
+// @access  Private
+router.put('/without-image', auth, async (req, res) => {
+  try {
+    const { name } = req.body;
+
+    const user = await getUserById(req.user._id);
+
+    user.name = name;
+
+    await user.save();
+
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
   }
 });
 

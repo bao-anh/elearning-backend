@@ -33,21 +33,7 @@ router.get('/', auth, async (req, res) => {
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
   try {
-    const topic = await Course.findById(req.params.id)
-      .populate({
-        path: 'memberIds',
-      })
-      .populate({
-        path: 'documentIds',
-      })
-      .populate({
-        path: 'progressIds',
-        populate: { path: 'userId' },
-      })
-      .populate({
-        path: 'topicIds',
-        populate: { path: 'progressIds', match: { userId: req.user._id } },
-      });
+    const topic = await getCourseByIdWithPopulate(req.params.id, req.user._id);
     handleUnprocessableEntity(topic, res);
     res.json(topic);
   } catch (err) {

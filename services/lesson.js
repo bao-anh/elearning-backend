@@ -37,5 +37,42 @@ exports.getLessonByIdWithPopulate = async (lessonId, userId) => {
       path: 'assignmentIds',
       populate: { path: 'progressIds', match: { userId } },
     })
-    .populate({ path: 'documentIds' });
+    .populate({ path: 'documentIds' })
+    .populate({
+      path: 'commentIds',
+      populate: [
+        {
+          path: 'userId',
+          select: 'name imageURL',
+        },
+        {
+          path: 'childrenIds',
+          populate: {
+            path: 'userId',
+            select: 'name imageURL',
+          },
+        },
+      ],
+    });
+};
+
+exports.getLessonByIdWithPopulateComment = async (lesson) => {
+  return await Lesson.findById(lesson)
+    .populate({
+      path: 'commentIds',
+      populate: [
+        {
+          path: 'userId',
+          select: 'name imageURL',
+        },
+        {
+          path: 'childrenIds',
+          populate: {
+            path: 'userId',
+            select: 'name imageURL',
+          },
+        },
+      ],
+    })
+    .select('commentIds');
 };

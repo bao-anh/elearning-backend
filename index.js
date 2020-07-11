@@ -34,6 +34,7 @@ app.use('/api/toeic', require('./routes/toeic'));
 app.use('/api/tests', require('./routes/tests'));
 app.use('/api/sets', require('./routes/sets'));
 app.use('/api/terms', require('./routes/terms'));
+app.use('/api/comments', require('./routes/comments'));
 
 const PORT = process.env.PORT || 5000;
 

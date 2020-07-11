@@ -48,10 +48,12 @@ const CourseSchema = Schema({
       ref: 'document',
     },
   ],
-  commentId: {
-    type: Schema.Types.ObjectId,
-    ref: 'comment',
-  },
+  commentIds: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'comment',
+    },
+  ],
   progressIds: [
     {
       type: Schema.Types.ObjectId,

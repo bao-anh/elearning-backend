@@ -2,24 +2,23 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const CommentSchema = Schema({
-  name: {
+  message: {
     type: String,
-    required: true,
   },
-  parentId: {
+  userId: {
     type: Schema.Types.ObjectId,
-    require: true,
+    ref: 'user',
   },
-  content: [
+  likeIds: [
     {
-      userId: {
-        type: Schema.Types.ObjectId,
-        required: true,
-      },
-      message: {
-        type: String,
-        required: true,
-      },
+      type: Schema.Types.ObjectId,
+      ref: 'user',
+    },
+  ],
+  childrenIds: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'comment',
     },
   ],
   date: {

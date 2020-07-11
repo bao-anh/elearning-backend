@@ -12,6 +12,7 @@ const parser = require('../config/parse');
 const Set = require('../models/Set');
 const Term = require('../models/Term');
 const Remember = require('../models/Remember');
+const User = require('../models/User');
 
 // @route   GET api/sets
 // @desc    Get set by userId
@@ -57,6 +58,7 @@ router.post('/', auth, parser.single('imageURL'), async (req, res) => {
       const set = new Set({
         name,
         ownerId: req.user._id,
+        userIds: [req.user._id],
         description,
         imageURL: req.file ? req.file.path : null,
         visiable,
@@ -103,7 +105,6 @@ router.post('/:id', auth, parser.single('imageURL'), async (req, res) => {
 
       for (i = 0; i < set.termIds.length; i++) {
         const term = await getTermById(set.termIds[i]._id);
-        console.log(term);
         const remember = new Remember({
           userId: req.user._id,
           correct: 0,
@@ -113,6 +114,9 @@ router.post('/:id', auth, parser.single('imageURL'), async (req, res) => {
         term.rememberIds.push(remember._id);
         await term.save({ session });
       }
+
+      set.userIds.push(req.user._id);
+      await set.save({ session });
     } catch (err) {
       await session.abortTransaction();
       session.endSession();
@@ -141,25 +145,40 @@ router.post('/:id/terms', auth, parser.single('imageURL'), async (req, res) => {
     session.startTransaction();
 
     try {
-      const remember = new Remember({
+      const set = await getSetById(req.params.id);
+
+      let rememberIds = [];
+
+      for (i = 0; i < set.userIds.length; i++) {
+        const remember = new Remember({
+          userId: set.userIds[i],
+          correct: 0,
+          attempt: 0,
+        });
+
+        await remember.save({ session });
+        rememberIds.push(remember._id);
+      }
+
+      const ownerRemember = new Remember({
         userId: req.user._id,
         correct: 0,
         attempt: 0,
       });
 
-      await remember.save({ session });
+      await ownerRemember.save({ session });
+      rememberIds.push(ownerRemember._id);
 
       const term = new Term({
         name,
         definition,
         imageURL: req.file ? req.file.path : null,
         imageName,
-        rememberIds: [remember._id],
+        rememberIds,
       });
 
       await term.save({ session });
 
-      const set = await getSetById(req.params.id);
       set.termIds.push(term._id);
 
       await set.save({ session });
